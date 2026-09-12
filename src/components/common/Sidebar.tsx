@@ -17,21 +17,19 @@ import { AdminTab, Role } from '../../types';
 interface SidebarProps {
   activeTab: AdminTab;
   onSelectTab: (tab: AdminTab) => void;
-  role: Role;
+  role?: Role;
   unreadNotificationsCount: number;
   isOpen: boolean;
   onToggle: () => void;
-  onLogout: () => void;
+  onLogout?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onSelectTab,
-  role,
   unreadNotificationsCount,
   isOpen,
   onToggle,
-  onLogout,
 }) => {
   const navItems: { id: AdminTab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
@@ -48,7 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: <Bell size={18} />,
       badge: unreadNotificationsCount > 0 ? unreadNotificationsCount : undefined,
     },
-    { id: 'profile', label: 'Profile & Role', icon: <UserCheck size={18} /> },
+    { id: 'profile', label: 'Admin Profile', icon: <UserCheck size={18} /> },
   ];
 
   return (
@@ -180,7 +178,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div
             style={{
               padding: '0.75rem 1.25rem',
-              backgroundColor: role === 'ADMIN' ? 'var(--trust-50)' : 'var(--primary-50)',
+              backgroundColor: 'var(--trust-50)',
               borderBottom: '1px solid var(--border-subtle)',
               display: 'flex',
               alignItems: 'center',
@@ -191,12 +189,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span
               className="badge"
               style={{
-                backgroundColor: role === 'ADMIN' ? 'var(--trust-100)' : 'var(--primary-100)',
-                color: role === 'ADMIN' ? 'var(--trust-800)' : 'var(--primary-800)',
+                backgroundColor: 'var(--trust-100)',
+                color: 'var(--trust-800)',
                 fontSize: '0.7rem',
+                fontWeight: 700,
               }}
             >
-              {role === 'ADMIN' ? 'Administrator' : 'PACS Staff'}
+              Administrator
             </span>
           </div>
         )}
@@ -300,29 +299,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           })}
         </div>
 
-        {/* Footer Logout */}
-        <div style={{ padding: '0.75rem 0.65rem', borderTop: '1px solid var(--border-color)' }}>
-          <button
-            onClick={onLogout}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              width: '100%',
-              padding: isOpen ? '0.6rem 0.85rem' : '0.6rem 0',
-              justifyContent: isOpen ? 'flex-start' : 'center',
-              borderRadius: 'var(--radius-md)',
-              border: 'none',
-              backgroundColor: 'transparent',
-              color: 'var(--slate-600)',
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-            }}
-            title="Log out"
-          >
-            <LogOut size={16} />
-            {isOpen && <span>Log Out</span>}
-          </button>
+        {/* Footer Info */}
+        <div style={{ padding: '0.85rem 1rem', borderTop: '1px solid var(--border-color)', fontSize: '0.75rem', color: 'var(--slate-500)' }}>
+          {isOpen ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 600, color: 'var(--slate-700)' }}>Operations Console</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--trust-700)', fontWeight: 600 }}>v2.1</span>
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--trust-700)', fontWeight: 700 }}>v2.1</div>
+          )}
         </div>
       </aside>
     </>

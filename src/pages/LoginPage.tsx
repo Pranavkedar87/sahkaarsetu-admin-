@@ -1,24 +1,20 @@
 import React, { useState } from 'react';
-import { ShieldCheck, UserCheck, Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
-import { Role, User } from '../types';
-import { PRESET_DEV_CREDENTIALS, login } from '../services/api/auth';
+import { ShieldCheck, Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
+import { User } from '../types';
+import { DEMO_ADMIN_USER, login } from '../services/api/auth';
 
 interface LoginPageProps {
   onLoginSuccess: (user: User) => void;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
-  const [selectedRole, setSelectedRole] = useState<Role>('ADMIN');
-  const [email, setEmail] = useState(PRESET_DEV_CREDENTIALS.ADMIN.email);
-  const [password, setPassword] = useState(PRESET_DEV_CREDENTIALS.ADMIN.password);
+  const [email, setEmail] = useState('admin@sahkaarsetu.local');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleRoleSelect = (role: Role) => {
-    setSelectedRole(role);
-    setEmail(PRESET_DEV_CREDENTIALS[role].email);
-    setPassword(PRESET_DEV_CREDENTIALS[role].password);
-    setErrorMsg(null);
+  const handleDemoAccess = () => {
+    onLoginSuccess(DEMO_ADMIN_USER);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -100,64 +96,38 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         <div
           style={{
             padding: '0.75rem 1.25rem',
-            backgroundColor: 'var(--primary-50)',
-            borderBottom: '1px solid var(--primary-100)',
+            backgroundColor: 'var(--trust-50)',
+            borderBottom: '1px solid var(--trust-100)',
             fontSize: '0.75rem',
-            color: 'var(--primary-800)',
+            color: 'var(--trust-800)',
             lineHeight: 1.4,
           }}
         >
-          🔐 <strong>Admin Authentication:</strong> Connected to real backend <code>/api/admin/auth/login</code>. Select preset dev credentials or enter official credentials.
+          🔐 <strong>Admin Operations Console:</strong> Direct administrator access or authentication via <code>/api/admin/auth/login</code>.
         </div>
 
         {/* Form Body */}
         <div style={{ padding: '1.5rem' }}>
-          {/* Role Presets Selector */}
           <div style={{ marginBottom: '1.25rem' }}>
-            <label className="form-label" style={{ marginBottom: '0.5rem', display: 'block' }}>
-              Select Operational Role
-            </label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-              <button
-                type="button"
-                onClick={() => handleRoleSelect('ADMIN')}
-                style={{
-                  padding: '0.65rem 0.5rem',
-                  borderRadius: 'var(--radius-md)',
-                  border: `2px solid ${selectedRole === 'ADMIN' ? 'var(--trust-700)' : 'var(--border-color)'}`,
-                  backgroundColor: selectedRole === 'ADMIN' ? 'var(--trust-50)' : '#ffffff',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700, fontSize: '0.8rem', color: selectedRole === 'ADMIN' ? 'var(--trust-800)' : 'var(--slate-800)' }}>
-                  <ShieldCheck size={14} /> Administrator
-                </div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--slate-500)', marginTop: '0.15rem' }}>
-                  Full kiosk & knowledge rights
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleRoleSelect('STAFF')}
-                style={{
-                  padding: '0.65rem 0.5rem',
-                  borderRadius: 'var(--radius-md)',
-                  border: `2px solid ${selectedRole === 'STAFF' ? 'var(--primary-700)' : 'var(--border-color)'}`,
-                  backgroundColor: selectedRole === 'STAFF' ? 'var(--primary-50)' : '#ffffff',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700, fontSize: '0.8rem', color: selectedRole === 'STAFF' ? 'var(--primary-800)' : 'var(--slate-800)' }}>
-                  <UserCheck size={14} /> PACS Staff
-                </div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--slate-500)', marginTop: '0.15rem' }}>
-                  Assigned cases & reviews
-                </div>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={handleDemoAccess}
+              className="btn btn-secondary"
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                fontWeight: 700,
+                color: 'var(--trust-800)',
+                backgroundColor: 'var(--trust-50)',
+                border: '1px solid var(--trust-300)',
+              }}
+            >
+              <ShieldCheck size={16} /> Enter Console as Administrator
+            </button>
           </div>
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

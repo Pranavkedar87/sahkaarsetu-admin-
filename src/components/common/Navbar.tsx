@@ -4,7 +4,7 @@ import { User, Role, AdminTab, SystemHealthData } from '../../types';
 
 interface NavbarProps {
   user: User;
-  onRoleChange: (newRole: Role) => void;
+  onRoleChange?: (newRole: Role) => void;
   systemHealth: SystemHealthData;
   unreadCount: number;
   onOpenSearch: () => void;
@@ -14,7 +14,6 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   user,
-  onRoleChange,
   systemHealth,
   unreadCount,
   onOpenSearch,
@@ -116,57 +115,24 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </div>
 
-        {/* Role Switcher */}
+        {/* Administrator Badge */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            backgroundColor: 'var(--slate-100)',
-            padding: '0.2rem',
-            borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--border-color)',
+            gap: '0.4rem',
+            backgroundColor: 'var(--trust-50)',
+            border: '1px solid var(--trust-200)',
+            borderRadius: '9999px',
+            padding: '0.3rem 0.75rem',
+            fontSize: '0.75rem',
+            fontWeight: 700,
+            color: 'var(--trust-800)',
           }}
+          title="SahkaarSetu Operations Console — Administrator Mode"
         >
-          <button
-            onClick={() => onRoleChange('ADMIN')}
-            style={{
-              padding: '0.25rem 0.6rem',
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              borderRadius: '4px',
-              border: 'none',
-              cursor: 'pointer',
-              backgroundColor: user.role === 'ADMIN' ? '#ffffff' : 'transparent',
-              color: user.role === 'ADMIN' ? 'var(--trust-800)' : 'var(--slate-600)',
-              boxShadow: user.role === 'ADMIN' ? 'var(--shadow-sm)' : 'none',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.3rem',
-            }}
-          >
-            <ShieldCheck size={13} />
-            Admin
-          </button>
-          <button
-            onClick={() => onRoleChange('STAFF')}
-            style={{
-              padding: '0.25rem 0.6rem',
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              borderRadius: '4px',
-              border: 'none',
-              cursor: 'pointer',
-              backgroundColor: user.role === 'STAFF' ? '#ffffff' : 'transparent',
-              color: user.role === 'STAFF' ? 'var(--primary-800)' : 'var(--slate-600)',
-              boxShadow: user.role === 'STAFF' ? 'var(--shadow-sm)' : 'none',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.3rem',
-            }}
-          >
-            <UserCheck size={13} />
-            Staff
-          </button>
+          <ShieldCheck size={14} style={{ color: 'var(--trust-600)' }} />
+          <span>Administrator</span>
         </div>
 
         {/* Notifications Icon Button */}

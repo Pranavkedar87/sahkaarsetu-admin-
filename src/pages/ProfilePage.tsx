@@ -6,20 +6,20 @@ import { User as UserType, Role } from '../types';
 
 interface ProfilePageProps {
   user: UserType;
-  onRoleChange: (newRole: Role) => void;
-  onLogout: () => void;
+  onRoleChange?: (newRole: Role) => void;
+  onLogout?: () => void;
 }
 
-export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onRoleChange, onLogout }) => {
+export const ProfilePage: React.FC<ProfilePageProps> = ({ user }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '900px' }}>
       {/* Header */}
       <div>
         <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--slate-900)' }}>
-          Operator Profile & Role Permissions
+          Administrator Profile & System Permissions
         </h2>
         <p style={{ fontSize: '0.875rem', color: 'var(--slate-500)', marginTop: '0.2rem' }}>
-          Manage your operations role, assigned PACS society, and operational privileges.
+          Operations role, assigned touchpoints, and system administration privileges.
         </p>
       </div>
 
@@ -27,8 +27,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onRoleChange, on
       <Card
         title="Active Operator Profile"
         badge={
-          <Badge variant={user.role === 'ADMIN' ? 'info' : 'success'}>
-            {user.role === 'ADMIN' ? 'Administrator' : 'PACS Staff'}
+          <Badge variant="info">
+            Administrator
           </Badge>
         }
       >
@@ -38,7 +38,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onRoleChange, on
               width: 56,
               height: 56,
               borderRadius: '50%',
-              backgroundColor: user.role === 'ADMIN' ? 'var(--trust-700)' : 'var(--primary-700)',
+              backgroundColor: 'var(--trust-700)',
               color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
@@ -47,7 +47,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onRoleChange, on
               fontWeight: 800,
             }}
           >
-            {user.avatar || 'OP'}
+            {user.avatar || 'AD'}
           </div>
           <div>
             <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--slate-900)' }}>
@@ -80,37 +80,24 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onRoleChange, on
           </div>
         )}
 
-        {/* Quick Role Toggle */}
+        {/* Administrator Status Box */}
         <div
           style={{
             padding: '1rem',
-            backgroundColor: 'var(--slate-50)',
+            backgroundColor: 'var(--trust-50)',
             borderRadius: '8px',
-            border: '1px solid var(--border-color)',
+            border: '1px solid var(--trust-200)',
           }}
         >
-          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--slate-800)', marginBottom: '0.35rem' }}>
-            Switch Active Role (Demo Mode)
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+            <ShieldCheck size={18} style={{ color: 'var(--trust-700)' }} />
+            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--trust-900)' }}>
+              Administrator Operations Console Mode
+            </span>
           </div>
-          <p style={{ fontSize: '0.8rem', color: 'var(--slate-600)', marginBottom: '0.75rem' }}>
-            Toggle between Administrator and Staff to inspect role-tailored view boundaries and action restrictions:
+          <p style={{ fontSize: '0.8rem', color: 'var(--trust-800)', margin: 0 }}>
+            You are operating with unrestricted system administrator privileges across all PACS societies, kiosk nodes, grievances, and knowledge bases.
           </p>
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <button
-              onClick={() => onRoleChange('ADMIN')}
-              className={`btn btn-sm ${user.role === 'ADMIN' ? 'btn-primary' : 'btn-secondary'}`}
-              style={{ padding: '0.4rem 0.85rem' }}
-            >
-              <ShieldCheck size={14} /> Administrator Mode
-            </button>
-            <button
-              onClick={() => onRoleChange('STAFF')}
-              className={`btn btn-sm ${user.role === 'STAFF' ? 'btn-primary' : 'btn-secondary'}`}
-              style={{ padding: '0.4rem 0.85rem' }}
-            >
-              <UserCheck size={14} /> PACS Staff Mode
-            </button>
-          </div>
         </div>
       </Card>
 
@@ -158,7 +145,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onRoleChange, on
           </table>
         </div>
 
-        {/* Backend Auth Architecture Notice (Requirement 4 & 18) */}
+        {/* Operations Console Architecture Notice */}
         <div
           style={{
             marginTop: '1.25rem',
@@ -171,7 +158,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onRoleChange, on
             lineHeight: 1.5,
           }}
         >
-          ℹ️ <strong>Backend Authentication Requirement:</strong> The current FastAPI backend has not implemented <code>/api/auth/login</code> or JWT token issuance (PostgreSQL <code>users</code> table is a placeholder). The Admin portal structure is completely pre-wired to plug into backend auth tokens once that backend milestone is scheduled.
+          ℹ️ <strong>Operations Console Architecture:</strong> The SahkaarSetu Admin Portal operates directly in Administrator Mode for seamless demonstration and operations management. The underlying FastAPI backend preserves complete Phase 2A JWT authentication, password hashing, and role-based access controls for production deployments.
         </div>
       </Card>
     </div>

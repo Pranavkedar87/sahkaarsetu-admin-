@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { AdminTab, Role, User, SystemHealthData } from './types';
-import { getStoredUser, fetchCurrentUser, switchDevRole, logout } from './services/api/auth';
+import { AdminTab, User, SystemHealthData } from './types';
+import { getStoredUser, fetchCurrentUser } from './services/api/auth';
 import { fetchSystemHealth } from './services/api/health';
 import { getNotifications } from './services/api/notifications';
 
@@ -15,10 +15,9 @@ import { GrievancesPage } from './pages/GrievancesPage';
 import { InsightsPage } from './pages/InsightsPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { ProfilePage } from './pages/ProfilePage';
-import { LoginPage } from './pages/LoginPage';
 
 export const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<User | null>(getStoredUser());
+  const [currentUser, setCurrentUser] = useState<User>(getStoredUser());
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -34,13 +33,11 @@ export const App: React.FC = () => {
     checkedAt: 'Polling...',
   });
 
-  // Check auth session on load
+  // Verify backend session or sync demo admin context on load
   useEffect(() => {
     fetchCurrentUser().then((u) => {
       if (u) {
         setCurrentUser(u);
-      } else {
-        setCurrentUser(null);
       }
     });
   }, []);
@@ -84,34 +81,16 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleRoleChange = async (newRole: Role) => {
-    const updated = await switchDevRole(newRole);
-    if (updated) {
-      setCurrentUser(updated);
-    }
-  };
-
-  const handleLogout = async () => {
-    await logout();
-    setCurrentUser(null);
-  };
-
-  // If user is logged out, display clean login view
-  if (!currentUser) {
-    return <LoginPage onLoginSuccess={(u) => setCurrentUser(u)} />;
-  }
-
   return (
     <div className="app-container">
       {/* Sidebar Navigation */}
       <Sidebar
         activeTab={activeTab}
         onSelectTab={(tab) => setActiveTab(tab)}
-        role={currentUser.role}
+        role="ADMIN"
         unreadNotificationsCount={unreadCount}
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
-        onLogout={handleLogout}
       />
 
       {/* Main Workspace Area */}
@@ -119,7 +98,6 @@ export const App: React.FC = () => {
         {/* Header Navbar */}
         <Navbar
           user={currentUser}
-          onRoleChange={handleRoleChange}
           systemHealth={systemHealth}
           unreadCount={unreadCount}
           onOpenSearch={() => setIsSearchOpen(true)}
@@ -132,34 +110,34 @@ export const App: React.FC = () => {
           {activeTab === 'dashboard' && (
             <DashboardPage
               onNavigate={(tab) => setActiveTab(tab)}
-              role={currentUser.role}
+              role="ADMIN"
               systemHealth={systemHealth}
             />
           )}
 
           {activeTab === 'kiosks' && (
-            <KiosksPage role={currentUser.role} />
+            <KiosksPage role="ADMIN" />
           )}
 
           {activeTab === 'knowledge' && (
-            <KnowledgePage role={currentUser.role} />
+            <KnowledgePage role="ADMIN" />
           )}
 
           {activeTab === 'grievances' && (
-            <GrievancesPage role={currentUser.role} />
+            <GrievancesPage role="ADMIN" />
           )}
 
           {activeTab === 'insights' && (
             <InsightsPage
               onNavigate={(tab) => setActiveTab(tab)}
-              role={currentUser.role}
+              role="ADMIN"
             />
           )}
 
           {activeTab === 'notifications' && (
             <NotificationsPage
               onNavigate={(tab) => setActiveTab(tab)}
-              role={currentUser.role}
+              role="ADMIN"
               onRefreshBadge={refreshNotifications}
             />
           )}
@@ -167,8 +145,6 @@ export const App: React.FC = () => {
           {activeTab === 'profile' && (
             <ProfilePage
               user={currentUser}
-              onRoleChange={handleRoleChange}
-              onLogout={handleLogout}
             />
           )}
         </main>

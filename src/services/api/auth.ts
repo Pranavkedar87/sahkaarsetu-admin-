@@ -20,19 +20,12 @@ export interface LoginResponseData {
   user: BackendAdminUser;
 }
 
-export const PRESET_DEV_CREDENTIALS: Record<Role, { email: string; password: string; name: string; role: Role }> = {
-  ADMIN: {
-    email: 'admin@sahkaarsetu.local',
-    password: 'SahkaarSetu@Admin2026',
-    name: 'SahkaarSetu Administrator',
-    role: 'ADMIN',
-  },
-  STAFF: {
-    email: 'staff@sahkaarsetu.local',
-    password: 'SahkaarSetu@Staff2026',
-    name: 'PACS Operations Staff',
-    role: 'STAFF',
-  },
+export const DEMO_ADMIN_USER: User = {
+  id: 'USR-DEMO-ADMIN-001',
+  name: 'SahkaarSetu Operations Administrator',
+  email: 'admin@sahkaarsetu.local',
+  role: 'ADMIN',
+  avatar: 'AD',
 };
 
 export function mapBackendUserToUser(bUser: BackendAdminUser): User {
@@ -43,17 +36,15 @@ export function mapBackendUserToUser(bUser: BackendAdminUser): User {
         .join('')
         .slice(0, 2)
         .toUpperCase()
-    : bUser.role === 'ADMIN'
-    ? 'AD'
-    : 'ST';
+    : 'AD';
 
   return {
     id: bUser.id,
-    name: bUser.full_name || (bUser.role === 'ADMIN' ? 'System Administrator' : 'PACS Staff'),
-    email: bUser.email,
-    role: bUser.role,
+    name: bUser.full_name || 'SahkaarSetu Operations Administrator',
+    email: bUser.email || 'admin@sahkaarsetu.local',
+    role: 'ADMIN',
     assignedPacs: bUser.assigned_pacs || undefined,
-    avatar: initials,
+    avatar: initials || 'AD',
   };
 }
 
@@ -69,16 +60,23 @@ export function setStoredToken(token: string | null): void {
   }
 }
 
-export function getStoredUser(): User | null {
+export function getStoredUser(): User {
   try {
     const raw = localStorage.getItem(AUTH_USER_KEY);
     if (raw) {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        return {
+          ...DEMO_ADMIN_USER,
+          ...parsed,
+          role: 'ADMIN', // Enforce Admin in demo mode
+        };
+      }
     }
   } catch {
     // Ignore storage parse error
   }
-  return null;
+  return DEMO_ADMIN_USER;
 }
 
 export function setStoredUser(user: User | null): void {
@@ -86,7 +84,7 @@ export function setStoredUser(user: User | null): void {
     if (user) {
       localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
     } else {
-      localStorage.removeItem(AUTH_USER_KEY);
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(DEMO_ADMIN_USER));
     }
   } catch {
     // Ignore storage write error
@@ -115,29 +113,26 @@ export async function login(
   };
 }
 
-export async function fetchCurrentUser(): Promise<User | null> {
+export async function fetchCurrentUser(): Promise<User> {
   const token = getStoredToken();
-  if (!token) {
-    setStoredUser(null);
-    return null;
+  try {
+    const res = await request<BackendAdminUser>('/api/admin/auth/me');
+    if (res.data && res.data.id) {
+      const user = mapBackendUserToUser(res.data);
+      setStoredUser(user);
+      return user;
+    }
+  } catch {
+    // Fall back to default admin in demo mode
   }
 
-  const res = await request<BackendAdminUser>('/api/admin/auth/me');
-  if (res.data && res.data.id) {
-    const user = mapBackendUserToUser(res.data);
-    setStoredUser(user);
-    return user;
-  }
-
-  // Token is expired or invalid
-  logout();
-  return null;
+  // Token is expired, absent, or backend in demo mode
+  setStoredUser(DEMO_ADMIN_USER);
+  return DEMO_ADMIN_USER;
 }
 
-export async function switchDevRole(role: Role): Promise<User | null> {
-  const creds = PRESET_DEV_CREDENTIALS[role];
-  const res = await login(creds.email, creds.password);
-  return res.user || null;
+export async function switchDevRole(_role?: Role): Promise<User> {
+  return DEMO_ADMIN_USER;
 }
 
 export async function logout(): Promise<void> {
@@ -147,7 +142,8 @@ export async function logout(): Promise<void> {
     // Ignore error on logout call
   } finally {
     setStoredToken(null);
-    setStoredUser(null);
+    setStoredUser(DEMO_ADMIN_USER);
   }
 }
+
 
