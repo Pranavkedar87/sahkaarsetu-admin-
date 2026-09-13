@@ -87,7 +87,7 @@ export const App: React.FC = () => {
 
   // Handle Hamburger toggle intelligently for mobile vs desktop
   const handleToggleNavigation = () => {
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
       setIsMobileNavOpen((prev) => !prev);
     } else {
       setSidebarOpen((prev) => !prev);

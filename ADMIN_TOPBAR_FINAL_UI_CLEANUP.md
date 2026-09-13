@@ -24,6 +24,11 @@ Following the initial mobile responsiveness overhaul, this cleanup removes unnec
   - Attention Center notifications bell with unread counter badge (`navbar-bell-badge`)
   - Admin Profile trigger with user avatar (`navbar-profile-trigger`) and name/role on desktop
 
+### Key Technical Fixes Applied:
+- **Safari Vertical Clipping Bug Fixed**: Replaced `overflow-x: hidden` with `overflow-x: clip` globally. In iOS Safari, `overflow-x: hidden` breaks `position: sticky` and creates nested scroll containers; `clip` perfectly fixes this while handling horizontal overflow. Added `env(safe-area-inset-top)` for robust iOS notch handling.
+- **Duplicate Brand & Search Fixed**: Adjusted CSS specificity (`.navbar-icon-btn.mobile-search-btn { display: none !important }` and `.desktop-open + .main-content .navbar-brand-lockup { display: none !important }`) to ensure zero duplicate controls or logos on tablet screens when the sidebar is open.
+- **Mobile Drawer Breakpoint Fixed**: Changed JavaScript toggle boundary in `App.tsx` to `window.innerWidth <= 768` to perfectly align with the CSS `@media (max-width: 768px)` media query.
+
 ---
 
 ## 2. Header Layout by Form Factor

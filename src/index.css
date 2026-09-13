@@ -83,7 +83,7 @@
 html, body {
   width: 100%;
   max-width: 100vw;
-  overflow-x: hidden;
+  overflow-x: clip;
   position: relative;
 }
 
@@ -246,10 +246,11 @@ body {
 .app-container {
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   max-width: 100vw;
   background-color: var(--bg-app);
-  overflow-x: hidden;
+  overflow-x: clip;
   position: relative;
 }
 
@@ -259,7 +260,7 @@ body {
   flex-direction: column;
   min-width: 0;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
   position: relative;
 }
 
@@ -287,6 +288,7 @@ body {
   -webkit-backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border-color);
   padding: 0.65rem 1.25rem;
+  padding-top: max(0.65rem, env(safe-area-inset-top));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -337,6 +339,11 @@ body {
   user-select: none;
   min-width: 0;
   flex-shrink: 0;
+}
+
+/* When desktop sidebar is collapsed, reveal brand lockup in navbar so branding remains visible */
+.admin-sidebar.desktop-collapsed + .main-content .navbar-brand-lockup {
+  display: flex;
 }
 
 .navbar-brand-text {
@@ -414,8 +421,8 @@ body {
   flex-shrink: 0;
 }
 
-.mobile-search-btn {
-  display: none;
+.navbar-icon-btn.mobile-search-btn {
+  display: none !important;
 }
 
 .navbar-icon-btn {
@@ -509,12 +516,13 @@ body {
 @media (min-width: 769px) and (max-width: 1024px) {
   .sahkaar-navbar {
     padding: 0.55rem 1rem;
+    padding-top: max(0.55rem, env(safe-area-inset-top));
     gap: 0.65rem;
   }
 
-  .navbar-brand-lockup {
-    display: flex;
-    gap: 0.4rem;
+  /* When desktop sidebar is open on tablet, hide navbar brand to avoid duplicate logo */
+  .admin-sidebar.desktop-open + .main-content .navbar-brand-lockup {
+    display: none !important;
   }
 
   .navbar-brand-name {
@@ -545,6 +553,7 @@ body {
 @media (max-width: 768px) {
   .sahkaar-navbar {
     padding: 0.4rem 0.65rem;
+    padding-top: max(0.4rem, env(safe-area-inset-top));
     min-height: 52px;
     gap: 0.35rem;
   }
@@ -579,7 +588,7 @@ body {
     display: none !important;
   }
 
-  .mobile-search-btn {
+  .navbar-icon-btn.mobile-search-btn {
     display: flex !important;
     min-width: 32px;
     min-height: 32px;
@@ -625,6 +634,7 @@ body {
   position: sticky;
   top: 0;
   height: 100vh;
+  height: 100dvh;
   user-select: none;
   transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   box-sizing: border-box;
@@ -644,8 +654,9 @@ body {
   align-items: center;
   justify-content: space-between;
   box-sizing: border-box;
-  padding: 1.15rem 1rem 1rem 1rem;
-  min-height: 64px;
+  padding: 0.65rem 1rem;
+  padding-top: max(0.65rem, env(safe-area-inset-top));
+  min-height: 58px;
 }
 
 .sidebar-brand-content {
@@ -917,12 +928,12 @@ body {
   .main-content {
     width: 100% !important;
     max-width: 100vw !important;
-    overflow-x: hidden !important;
+    overflow-x: clip !important;
   }
 
   .page-body {
     max-width: 100vw !important;
-    overflow-x: hidden !important;
+    overflow-x: clip !important;
   }
 
   .admin-sidebar .sidebar-nav-btn {
