@@ -23,6 +23,8 @@ import { getKiosksList } from '../services/api/kiosks';
 import { getKnowledgeDocuments } from '../services/api/knowledge';
 import { getGrievanceList } from '../services/api/grievances';
 import { getOperationsAnalytics, OperationsAnalytics } from '../services/api/analytics';
+import { getNotifications } from '../services/api/notifications';
+import { NotificationItem } from '../types';
 
 interface DashboardPageProps {
   onNavigate: (tab: AdminTab) => void;
@@ -36,21 +38,24 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, role, 
   const [docs, setDocs] = useState<KnowledgeDoc[]>([]);
   const [grievances, setGrievances] = useState<GrievanceRecord[]>([]);
   const [analytics, setAnalytics] = useState<OperationsAnalytics | null>(null);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   useEffect(() => {
     async function loadDashboardData() {
       setLoading(true);
       try {
-        const [kioskRes, docRes, grvRes, analyticsRes] = await Promise.all([
+        const [kioskRes, docRes, grvRes, analyticsRes, notifRes] = await Promise.all([
           getKiosksList(),
           getKnowledgeDocuments(),
           getGrievanceList(),
           getOperationsAnalytics(),
+          getNotifications(),
         ]);
         setKiosks(kioskRes.kiosks);
         setDocs(docRes.docs);
         setGrievances(grvRes.grievances);
         setAnalytics(analyticsRes);
+        setNotifications(notifRes.notifications);
       } catch (err) {
         console.error('Error loading dashboard:', err);
       } finally {
@@ -259,101 +264,71 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, role, 
           subtitle="Items requiring staff intervention to maintain trustworthy citizen services"
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '0.75rem',
-                padding: '0.75rem',
-                backgroundColor: 'var(--danger-50)',
-                borderRadius: '8px',
-                border: '1px solid #fecaca',
-              }}
-            >
-              <AlertTriangle size={18} style={{ color: 'var(--danger-700)', marginTop: '0.15rem' }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--danger-700)' }}>
-                    Kiosk KSK-005 Offline (Solapur PACS)
-                  </span>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--slate-500)' }}>14h ago</span>
-                </div>
-                <p style={{ fontSize: '0.775rem', color: 'var(--slate-700)', marginTop: '0.2rem' }}>
-                  Substation power fault. PACS attendant reports battery depleted.
-                </p>
-                <button
-                  onClick={() => onNavigate('kiosks')}
-                  className="btn btn-secondary btn-sm"
-                  style={{ marginTop: '0.5rem', padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
-                >
-                  View Telemetry
-                </button>
+            {notifications.length === 0 ? (
+              <div
+                style={{
+                  padding: '1.5rem',
+                  textAlign: 'center',
+                  backgroundColor: 'var(--slate-50)',
+                  borderRadius: '8px',
+                  border: '1px dashed var(--border-color)',
+                  color: 'var(--slate-500)',
+                  fontSize: '0.85rem',
+                }}
+              >
+                <CheckCircle2 size={24} style={{ color: 'var(--success-600)', margin: '0 auto 0.5rem' }} />
+                <div>All systems operating normally. No immediate attention items required.</div>
               </div>
-            </div>
+            ) : (
+              notifications.slice(0, 3).map((item) => {
+                const isCritical = item.severity === 'critical';
+                const isHigh = item.severity === 'high';
+                const bg = isCritical ? 'var(--danger-50)' : isHigh ? 'var(--warning-50)' : 'var(--trust-50)';
+                const border = isCritical ? '#fecaca' : isHigh ? '#fde68a' : '#bfdbfe';
+                const iconColor = isCritical ? 'var(--danger-700)' : isHigh ? 'var(--warning-700)' : 'var(--trust-700)';
 
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '0.75rem',
-                padding: '0.75rem',
-                backgroundColor: 'var(--warning-50)',
-                borderRadius: '8px',
-                border: '1px solid #fde68a',
-              }}
-            >
-              <Clock size={18} style={{ color: 'var(--warning-700)', marginTop: '0.15rem' }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--warning-700)' }}>
-                    Circular No. 14/2026 Pending Legal Verification
-                  </span>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--slate-500)' }}>2h ago</span>
-                </div>
-                <p style={{ fontSize: '0.775rem', color: 'var(--slate-700)', marginTop: '0.2rem' }}>
-                  Mandatory passbook rule uploaded by Pune Registrar desk awaiting review before vector re-indexing.
-                </p>
-                <button
-                  onClick={() => onNavigate('knowledge')}
-                  className="btn btn-secondary btn-sm"
-                  style={{ marginTop: '0.5rem', padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
-                >
-                  Review Document
-                </button>
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '0.75rem',
-                padding: '0.75rem',
-                backgroundColor: 'var(--trust-50)',
-                borderRadius: '8px',
-                border: '1px solid #bfdbfe',
-              }}
-            >
-              <AlertCircle size={18} style={{ color: 'var(--trust-700)', marginTop: '0.15rem' }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--trust-700)' }}>
-                    Unassigned Grievance GRV-2026-006 (AIF Scheme)
-                  </span>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--slate-500)' }}>45m ago</span>
-                </div>
-                <p style={{ fontSize: '0.775rem', color: 'var(--slate-700)', marginTop: '0.2rem' }}>
-                  Katol Cotton PACS farmer requesting NOC guidance for warehouse capital subsidy.
-                </p>
-                <button
-                  onClick={() => onNavigate('grievances')}
-                  className="btn btn-secondary btn-sm"
-                  style={{ marginTop: '0.5rem', padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
-                >
-                  Assign Staff
-                </button>
-              </div>
-            </div>
+                return (
+                  <div
+                    key={item.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '0.75rem',
+                      padding: '0.75rem',
+                      backgroundColor: bg,
+                      borderRadius: '8px',
+                      border: `1px solid ${border}`,
+                    }}
+                  >
+                    {item.category === 'kiosks' ? (
+                      <Monitor size={18} style={{ color: iconColor, marginTop: '0.15rem' }} />
+                    ) : item.category === 'knowledge' ? (
+                      <BookOpen size={18} style={{ color: iconColor, marginTop: '0.15rem' }} />
+                    ) : (
+                      <AlertTriangle size={18} style={{ color: iconColor, marginTop: '0.15rem' }} />
+                    )}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.85rem', color: iconColor }}>
+                          {item.title}
+                        </span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--slate-500)' }}>{item.timestamp}</span>
+                      </div>
+                      <p style={{ fontSize: '0.775rem', color: 'var(--slate-700)', marginTop: '0.2rem' }}>
+                        {item.message}
+                      </p>
+                      <button
+                        onClick={() => onNavigate(item.linkTab)}
+                        className="btn btn-secondary btn-sm"
+                        style={{ marginTop: '0.5rem', padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
+                      >
+                        Take Action
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </Card>
 

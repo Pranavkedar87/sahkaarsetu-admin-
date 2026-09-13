@@ -155,6 +155,10 @@ export interface NotificationItem {
   category: 'kiosks' | 'knowledge' | 'grievances' | 'system';
   linkTab: AdminTab;
   isRead: boolean;
+  severity?: 'critical' | 'high' | 'medium' | 'low' | 'info';
+  entityType?: string;
+  entityId?: string;
+  createdAt?: string;
 }
 
 export interface SystemHealthData {
