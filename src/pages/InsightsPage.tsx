@@ -11,6 +11,7 @@ import {
   CheckCircle,
   HelpCircle,
   Sparkles,
+  Info,
 } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
@@ -23,29 +24,30 @@ interface InsightsPageProps {
   role: Role;
 }
 
-export const InsightsPage: React.FC<InsightsPageProps> = ({ onNavigate, role }) => {
+export const InsightsPage: React.FC<InsightsPageProps> = ({ onNavigate }) => {
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState<OperationsAnalytics | null>(null);
+  const [period, setPeriod] = useState<'24h' | '7d' | '30d'>('30d');
 
   useEffect(() => {
     async function loadAnalytics() {
       setLoading(true);
       try {
-        const res = await getOperationsAnalytics();
+        const res = await getOperationsAnalytics(period);
         setAnalytics(res);
       } finally {
         setLoading(false);
       }
     }
     loadAnalytics();
-  }, []);
+  }, [period]);
 
   if (loading || !analytics) {
     return <LoadingState message="Aggregating operational analytics and knowledge gap metrics..." />;
   }
 
   const { timeline, categories, languages, knowledgeGaps, summary } = analytics;
-  const maxQueries = Math.max(...timeline.map((t) => t.queries));
+  const maxQueries = Math.max(...timeline.map((t) => t.queries), 1);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -56,60 +58,106 @@ export const InsightsPage: React.FC<InsightsPageProps> = ({ onNavigate, role }) 
             <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--slate-900)' }}>
               Operational Insights & Knowledge Gaps
             </h2>
-            <Badge variant="demo">Telemetry Analytics</Badge>
+            <Badge variant="live" icon={<span className="pulse-dot" />}>
+              Live Database Telemetry
+            </Badge>
           </div>
           <p style={{ fontSize: '0.875rem', color: 'var(--slate-500)', marginTop: '0.2rem' }}>
-            Understand citizen demand patterns, multilingual adoption, hardware usage, and identify missing knowledge documents.
+            Empirical demand patterns, multilingual adoption, and closed-loop knowledge gap identification from Supabase PostgreSQL.
           </p>
         </div>
 
-        <button onClick={() => onNavigate('knowledge')} className="btn btn-primary btn-sm">
-          <BookOpen size={14} /> Update Knowledge Base
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {/* Period Selector */}
+          <div style={{ display: 'flex', backgroundColor: 'var(--slate-100)', borderRadius: '6px', padding: '2px', border: '1px solid var(--border-color)' }}>
+            {(['24h', '7d', '30d'] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                style={{
+                  padding: '4px 10px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  borderRadius: '4px',
+                  border: 'none',
+                  backgroundColor: period === p ? '#ffffff' : 'transparent',
+                  color: period === p ? 'var(--primary-700)' : 'var(--slate-600)',
+                  boxShadow: period === p ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                {p === '24h' ? '24 Hours' : p === '7d' ? '7 Days' : '30 Days'}
+              </button>
+            ))}
+          </div>
+
+          <button onClick={() => onNavigate('knowledge')} className="btn btn-primary btn-sm">
+            <BookOpen size={14} /> Update Knowledge Base
+          </button>
+        </div>
       </div>
 
       {/* KPI Overview Strip */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+        {/* Metric 1: Total Queries */}
         <div style={{ padding: '1rem', background: '#ffffff', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)' }}>
           <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--slate-500)', textTransform: 'uppercase' }}>
-            Total Assistance Queries
+            Total Citizen Queries
           </div>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--slate-900)', marginTop: '0.25rem' }}>
-            44,960
+            {summary.totalQueries.toLocaleString()}
           </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--success-700)', fontWeight: 600 }}>↑ 18% vs last week</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--slate-500)', fontWeight: 600 }}>
+            {summary.thisMonthQueries} in 30d • {summary.todayQueries} today
+          </div>
         </div>
 
+        {/* Metric 2: Voice Channel Telemetry */}
         <div style={{ padding: '1rem', background: '#ffffff', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)' }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--slate-500)', textTransform: 'uppercase' }}>
-            Voice Interactions
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--slate-500)', textTransform: 'uppercase' }}>
+              Voice Interactions
+            </span>
+            <Badge variant="neutral">Not Tracked</Badge>
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--primary-700)', marginTop: '0.25rem' }}>
-            {summary.voiceQueriesShare}%
+          <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--slate-400)', marginTop: '0.25rem' }}>
+            N/A
           </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--slate-500)' }}>Bhashini & Groq Whisper STT</div>
+          <div style={{ fontSize: '0.7rem', color: 'var(--slate-400)' }} title={analytics.channelTelemetry.reason}>
+            Channel mode not in message schema
+          </div>
         </div>
 
+        {/* Metric 3: Kiosk Channel Telemetry */}
         <div style={{ padding: '1rem', background: '#ffffff', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)' }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--slate-500)', textTransform: 'uppercase' }}>
-            Rural Kiosk Share
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--slate-500)', textTransform: 'uppercase' }}>
+              Rural Kiosk Share
+            </span>
+            <Badge variant="neutral">Not Tracked</Badge>
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--trust-700)', marginTop: '0.25rem' }}>
-            {summary.kioskQueriesShare}%
+          <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--slate-400)', marginTop: '0.25rem' }}>
+            N/A
           </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--slate-500)' }}>Direct PACS terminals</div>
+          <div style={{ fontSize: '0.7rem', color: 'var(--slate-400)' }} title={analytics.channelTelemetry.reason}>
+            Hardware source ID not captured
+          </div>
         </div>
 
+        {/* Metric 4: AI Escalations */}
         <div style={{ padding: '1rem', background: '#ffffff', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)' }}>
           <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--slate-500)', textTransform: 'uppercase' }}>
-            AI Escalations
+            Active Triage Cases
           </div>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--accent-700)', marginTop: '0.25rem' }}>
             {summary.unresolvedEscalations}
           </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--accent-700)', fontWeight: 600 }}>Requiring staff review</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--accent-700)', fontWeight: 600 }}>
+            Under staff review
+          </div>
         </div>
 
+        {/* Metric 5: Knowledge Gaps */}
         <div style={{ padding: '1rem', background: '#ffffff', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)' }}>
           <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--slate-500)', textTransform: 'uppercase' }}>
             Knowledge Gaps
@@ -126,45 +174,44 @@ export const InsightsPage: React.FC<InsightsPageProps> = ({ onNavigate, role }) 
         {/* Chart 1: Assistance Queries Over Time */}
         <Card
           title="Assistance Demand Over Time"
-          subtitle="Daily queries split between voice interactions and rural PACS kiosks"
+          subtitle={`Query volume per ${period === '24h' ? 'hour' : 'day'} from Supabase messages table`}
         >
-          <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-            {timeline.map((point) => {
-              const barWidth = Math.round((point.queries / maxQueries) * 100);
-              return (
-                <div key={point.date} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.8rem' }}>
-                  <span style={{ width: '50px', color: 'var(--slate-500)', fontWeight: 600 }}>{point.date}</span>
-                  <div style={{ flex: 1, backgroundColor: 'var(--slate-100)', height: '22px', borderRadius: '4px', overflow: 'hidden', display: 'flex' }}>
-                    <div
-                      style={{
-                        width: `${(point.voiceQueries / point.queries) * barWidth}%`,
-                        backgroundColor: 'var(--primary-600)',
-                        height: '100%',
-                      }}
-                      title={`Voice: ${point.voiceQueries}`}
-                    />
-                    <div
-                      style={{
-                        width: `${(point.kioskQueries / point.queries) * barWidth}%`,
-                        backgroundColor: 'var(--trust-600)',
-                        height: '100%',
-                      }}
-                      title={`Kiosk: ${point.kioskQueries}`}
-                    />
+          <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {timeline.length === 0 ? (
+              <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--slate-500)', fontSize: '0.85rem' }}>
+                No citizen queries recorded in this time window.
+              </div>
+            ) : (
+              timeline.map((point) => {
+                const barWidth = Math.max(Math.round((point.queries / maxQueries) * 100), point.queries > 0 ? 3 : 0);
+                return (
+                  <div key={point.date} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.8rem' }}>
+                    <span style={{ width: period === '24h' ? '45px' : '55px', color: 'var(--slate-500)', fontWeight: 600, fontSize: '0.75rem' }}>
+                      {point.date}
+                    </span>
+                    <div style={{ flex: 1, backgroundColor: 'var(--slate-100)', height: '20px', borderRadius: '4px', overflow: 'hidden', display: 'flex' }}>
+                      <div
+                        style={{
+                          width: `${barWidth}%`,
+                          backgroundColor: 'var(--primary-600)',
+                          height: '100%',
+                          transition: 'width 0.3s ease',
+                        }}
+                        title={`Queries: ${point.queries}`}
+                      />
+                    </div>
+                    <span style={{ width: '45px', textAlign: 'right', fontWeight: 700, fontFamily: 'var(--font-mono)', fontSize: '0.8rem' }}>
+                      {point.queries}
+                    </span>
                   </div>
-                  <span style={{ width: '60px', textAlign: 'right', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
-                    {point.queries.toLocaleString()}
-                  </span>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
 
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '0.5rem', fontSize: '0.75rem' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                <span style={{ width: 10, height: 10, backgroundColor: 'var(--primary-600)', borderRadius: '2px' }} /> Voice Queries
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                <span style={{ width: 10, height: 10, backgroundColor: 'var(--trust-600)', borderRadius: '2px' }} /> Kiosk Terminals
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', padding: '0.5rem 0.75rem', backgroundColor: 'var(--slate-50)', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--slate-600)' }}>
+              <Info size={14} style={{ color: 'var(--slate-400)', flexShrink: 0 }} />
+              <span>
+                <strong>Telemetry Notice:</strong> Total queries are derived from the live database. Voice STT vs Touch breakdown is not stored in the current message schema.
               </span>
             </div>
           </div>
@@ -173,66 +220,77 @@ export const InsightsPage: React.FC<InsightsPageProps> = ({ onNavigate, role }) 
         {/* Chart 2: Top Assistance Categories */}
         <Card
           title="Most Used Assistance Categories"
-          subtitle="Distribution of farmer queries across cooperative domains"
+          subtitle="Distribution of citizen inquiries across cooperative domains from LLM intent classification"
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
-            {categories.map((cat) => (
-              <div key={cat.category}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.2rem' }}>
-                  <span style={{ fontWeight: 600, color: 'var(--slate-800)' }}>{cat.category}</span>
-                  <span style={{ fontWeight: 700, color: 'var(--slate-600)' }}>
-                    {cat.count.toLocaleString()} ({cat.percentage}%)
-                  </span>
-                </div>
-                <div style={{ width: '100%', backgroundColor: 'var(--slate-100)', height: '10px', borderRadius: '9999px', overflow: 'hidden' }}>
-                  <div
-                    style={{
-                      width: `${cat.percentage * 2}%`,
-                      maxWidth: '100%',
-                      backgroundColor: cat.color,
-                      height: '100%',
-                      borderRadius: '9999px',
-                    }}
-                  />
-                </div>
+            {categories.length === 0 ? (
+              <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--slate-500)', fontSize: '0.85rem' }}>
+                No intent data available.
               </div>
-            ))}
+            ) : (
+              categories.map((cat) => (
+                <div key={cat.category}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.2rem' }}>
+                    <span style={{ fontWeight: 600, color: 'var(--slate-800)' }}>{cat.category}</span>
+                    <span style={{ fontWeight: 700, color: 'var(--slate-600)' }}>
+                      {cat.count.toLocaleString()} ({cat.percentage}%)
+                    </span>
+                  </div>
+                  <div style={{ width: '100%', backgroundColor: 'var(--slate-100)', height: '10px', borderRadius: '9999px', overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        width: `${Math.min(cat.percentage * 2, 100)}%`,
+                        backgroundColor: cat.color,
+                        height: '100%',
+                        borderRadius: '9999px',
+                      }}
+                    />
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </Card>
 
         {/* Chart 3: Language Usage Distribution */}
         <Card
           title="Multilingual Distribution"
-          subtitle="Citizen vernacular preference across web, mobile, and kiosk"
+          subtitle="Citizen vernacular preference captured across user messages"
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
-            {languages.map((lang) => (
-              <div key={lang.code}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.2rem' }}>
-                  <span style={{ fontWeight: 600, color: 'var(--slate-800)' }}>{lang.language}</span>
-                  <span style={{ fontWeight: 700, color: 'var(--slate-600)' }}>
-                    {lang.count.toLocaleString()} ({lang.percentage}%)
-                  </span>
-                </div>
-                <div style={{ width: '100%', backgroundColor: 'var(--slate-100)', height: '10px', borderRadius: '9999px', overflow: 'hidden' }}>
-                  <div
-                    style={{
-                      width: `${lang.percentage}%`,
-                      backgroundColor: lang.color,
-                      height: '100%',
-                      borderRadius: '9999px',
-                    }}
-                  />
-                </div>
+            {languages.length === 0 ? (
+              <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--slate-500)', fontSize: '0.85rem' }}>
+                No language records available.
               </div>
-            ))}
+            ) : (
+              languages.map((lang) => (
+                <div key={lang.code}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.2rem' }}>
+                    <span style={{ fontWeight: 600, color: 'var(--slate-800)' }}>{lang.language}</span>
+                    <span style={{ fontWeight: 700, color: 'var(--slate-600)' }}>
+                      {lang.count.toLocaleString()} ({lang.percentage}%)
+                    </span>
+                  </div>
+                  <div style={{ width: '100%', backgroundColor: 'var(--slate-100)', height: '10px', borderRadius: '9999px', overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        width: `${lang.percentage}%`,
+                        backgroundColor: lang.color,
+                        height: '100%',
+                        borderRadius: '9999px',
+                      }}
+                    />
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </Card>
 
-        {/* Section: Closed-Loop Knowledge Gap Resolution (Requirement 7) */}
+        {/* Section: Closed-Loop Knowledge Gap Resolution */}
         <Card
           title="Identified Knowledge Gaps (AI Escalations)"
-          subtitle="Queries where the AI had low confidence due to missing or local by-laws"
+          subtitle="Derived from query intent patterns lacking dedicated official published documentation"
           action={
             <Badge variant="warning">{knowledgeGaps.length} Action Items</Badge>
           }

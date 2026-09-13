@@ -220,7 +220,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, role, 
         {/* Card 4: AI & Assistance Telemetry */}
         <Card
           title="Assistance Volume"
-          badge={<Badge variant="info">44.8k Queries</Badge>}
+          badge={<Badge variant="info">{analytics?.summary ? `${analytics.summary.totalQueries.toLocaleString()} Queries` : 'Live Telemetry'}</Badge>}
           action={
             <button onClick={() => onNavigate('insights')} className="btn btn-secondary btn-sm" style={{ padding: '0.2rem 0.5rem' }}>
               Insights <ArrowRight size={12} />
@@ -228,19 +228,24 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, role, 
           }
         >
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--slate-900)', margin: '0.25rem 0' }}>
-            8,940 <span style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--slate-500)' }}>queries / 24h</span>
+            {analytics?.summary ? analytics.summary.todayQueries.toLocaleString() : '0'}{' '}
+            <span style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--slate-500)' }}>queries today</span>
           </div>
           <p style={{ fontSize: '0.8rem', color: 'var(--slate-600)', marginBottom: '1rem' }}>
-            Voice and kiosk requests in Marathi, Hindi & Gujarati.
+            Multilingual citizen inquiries in Marathi, Hindi & English.
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', textAlign: 'center' }}>
             <div style={{ padding: '0.5rem', background: 'var(--primary-50)', borderRadius: '6px', border: '1px solid #dcfce7' }}>
-              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--primary-700)' }}>76.6%</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--primary-700)', fontWeight: 600 }}>VOICE ASSISTED</div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--primary-700)' }}>
+                {analytics?.summary ? analytics.summary.thisMonthQueries.toLocaleString() : '0'}
+              </div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--primary-700)', fontWeight: 600 }}>30-DAY VOLUME</div>
             </div>
             <div style={{ padding: '0.5rem', background: 'var(--accent-50)', borderRadius: '6px', border: '1px solid #fed7aa' }}>
-              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--accent-700)' }}>14</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--accent-700)', fontWeight: 600 }}>ESCALATIONS</div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--accent-700)' }}>
+                {analytics?.summary ? analytics.summary.unresolvedEscalations : '0'}
+              </div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--accent-700)', fontWeight: 600 }}>ACTIVE CASES</div>
             </div>
           </div>
         </Card>
