@@ -1,12 +1,12 @@
 import React from 'react';
-import { Search, Bell, Menu, ShieldCheck, WifiOff } from 'lucide-react';
+import { Search, Bell, Menu } from 'lucide-react';
 import { User, Role, AdminTab, SystemHealthData } from '../../types';
 import { SahkaarSetuLogo } from './SahkaarSetuLogo';
 
 interface NavbarProps {
   user: User;
   onRoleChange?: (newRole: Role) => void;
-  systemHealth: SystemHealthData;
+  systemHealth?: SystemHealthData;
   unreadCount: number;
   onOpenSearch: () => void;
   onNavigate: (tab: AdminTab) => void;
@@ -15,7 +15,6 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   user,
-  systemHealth,
   unreadCount,
   onOpenSearch,
   onNavigate,
@@ -23,7 +22,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   return (
     <header className="sahkaar-navbar">
-      {/* ── Left Side: Hamburger & Mobile/Desktop Brand & Search ───────── */}
+      {/* ── Left Side: Hamburger & Brand Lockup & Search Bar ───────── */}
       <div className="navbar-left">
         {/* Hamburger Toggle */}
         <button
@@ -35,36 +34,36 @@ export const Navbar: React.FC<NavbarProps> = ({
           <Menu size={19} color="#0F6B68" />
         </button>
 
-        {/* Mobile Brand */}
+        {/* SahkaarSetu Brand Lockup */}
         <div
-          className="navbar-mobile-brand"
+          className="navbar-brand-lockup"
           onClick={() => onNavigate('dashboard')}
           role="button"
           tabIndex={0}
           title="SahkaarSetu Operations Dashboard"
         >
-          <SahkaarSetuLogo size={28} />
+          <SahkaarSetuLogo size={32} />
           <div className="navbar-brand-text">
             <span className="navbar-brand-name">SahkaarSetu</span>
             <span className="navbar-brand-tag">Admin</span>
           </div>
         </div>
 
-        {/* Desktop Quick Search Trigger */}
+        {/* Desktop & Tablet Search Field */}
         <button
           onClick={onOpenSearch}
           className="navbar-desktop-search"
           title="Quick search (⌘K or Ctrl+K)"
         >
           <Search size={16} />
-          <span>Quick search (Kiosks, Docs, PACS)...</span>
+          <span className="navbar-search-placeholder">Quick search (Kiosks, Docs, PACS)...</span>
           <kbd className="navbar-search-kbd">⌘K</kbd>
         </button>
       </div>
 
-      {/* ── Right Side: Controls (Search icon, Health, Role, Bell, Profile) ── */}
+      {/* ── Right Side: Controls (Search icon, Bell, Profile) ──────── */}
       <div className="navbar-right">
-        {/* Mobile-Only Search Icon Trigger */}
+        {/* Mobile / Narrow Search Trigger Icon */}
         <button
           onClick={onOpenSearch}
           className="navbar-icon-btn mobile-search-btn"
@@ -73,37 +72,6 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           <Search size={18} color="#334155" />
         </button>
-
-        {/* Backend Connectivity Status (Desktop only) */}
-        <div
-          className="navbar-health-pill desktop-only-pill"
-          title={
-            systemHealth.isBackendConnected
-              ? `FastAPI Backend Online (${systemHealth.service} - ${systemHealth.model})`
-              : 'FastAPI Backend offline/standby. Operating on centralized local state.'
-          }
-        >
-          {systemHealth.isBackendConnected ? (
-            <>
-              <span className="pulse-dot" />
-              <span>FastAPI Live</span>
-            </>
-          ) : (
-            <>
-              <WifiOff size={13} style={{ color: 'var(--warning-600)' }} />
-              <span>Local Demo</span>
-            </>
-          )}
-        </div>
-
-        {/* Administrator Badge (Desktop only) */}
-        <div
-          className="navbar-admin-badge desktop-only-pill"
-          title="SahkaarSetu Operations Console — Administrator Mode"
-        >
-          <ShieldCheck size={14} style={{ color: 'var(--trust-600)' }} />
-          <span>Administrator</span>
-        </div>
 
         {/* Notifications Icon Button */}
         <button
