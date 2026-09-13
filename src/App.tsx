@@ -37,12 +37,15 @@ export const App: React.FC = () => {
     checkedAt: 'Polling...',
   });
 
+  const [authReady, setAuthReady] = useState(false);
+
   // Verify backend session or sync demo admin context on load
   useEffect(() => {
     fetchCurrentUser().then((u) => {
       if (u) {
         setCurrentUser(u);
       }
+      setAuthReady(true);
     });
   }, []);
 
@@ -114,65 +117,67 @@ export const App: React.FC = () => {
       />
 
       {/* ── Main Workspace Area ───────────────────────────────────── */}
-      <div className="main-content">
-        {/* Header Navbar */}
-        <Navbar
-          user={currentUser}
-          systemHealth={systemHealth}
-          unreadCount={unreadCount}
-          onOpenSearch={() => setIsSearchOpen(true)}
-          onNavigate={(tab) => setActiveTab(tab)}
-          onToggleSidebar={handleToggleNavigation}
-        />
+      {authReady && (
+        <div className="main-content">
+          {/* Header Navbar */}
+          <Navbar
+            user={currentUser}
+            systemHealth={systemHealth}
+            unreadCount={unreadCount}
+            onOpenSearch={() => setIsSearchOpen(true)}
+            onNavigate={(tab) => setActiveTab(tab)}
+            onToggleSidebar={handleToggleNavigation}
+          />
 
-        {/* Page Content Body */}
-        <main className="page-body">
-          {activeTab === 'dashboard' && (
-            <DashboardPage
-              onNavigate={(tab) => setActiveTab(tab)}
-              role="ADMIN"
-              systemHealth={systemHealth}
-            />
-          )}
+          {/* Page Content Body */}
+          <main className="page-body">
+            {activeTab === 'dashboard' && (
+              <DashboardPage
+                onNavigate={(tab) => setActiveTab(tab)}
+                role="ADMIN"
+                systemHealth={systemHealth}
+              />
+            )}
 
-          {activeTab === 'kiosks' && (
-            <KiosksPage role="ADMIN" />
-          )}
+            {activeTab === 'kiosks' && (
+              <KiosksPage role="ADMIN" />
+            )}
 
-          {activeTab === 'knowledge' && (
-            <KnowledgePage role="ADMIN" />
-          )}
+            {activeTab === 'knowledge' && (
+              <KnowledgePage role="ADMIN" />
+            )}
 
-          {activeTab === 'grievances' && (
-            <GrievancesPage role="ADMIN" />
-          )}
+            {activeTab === 'grievances' && (
+              <GrievancesPage role="ADMIN" />
+            )}
 
-          {activeTab === 'insights' && (
-            <InsightsPage
-              onNavigate={(tab) => setActiveTab(tab)}
-              role="ADMIN"
-            />
-          )}
+            {activeTab === 'insights' && (
+              <InsightsPage
+                onNavigate={(tab) => setActiveTab(tab)}
+                role="ADMIN"
+              />
+            )}
 
-          {activeTab === 'notifications' && (
-            <NotificationsPage
-              onNavigate={(tab) => setActiveTab(tab)}
-              role="ADMIN"
-              onRefreshBadge={refreshNotifications}
-            />
-          )}
+            {activeTab === 'notifications' && (
+              <NotificationsPage
+                onNavigate={(tab) => setActiveTab(tab)}
+                role="ADMIN"
+                onRefreshBadge={refreshNotifications}
+              />
+            )}
 
-          {activeTab === 'audit-logs' && (
-            <AuditLogsPage role="ADMIN" />
-          )}
+            {activeTab === 'audit-logs' && (
+              <AuditLogsPage role="ADMIN" />
+            )}
 
-          {activeTab === 'profile' && (
-            <ProfilePage
-              user={currentUser}
-            />
-          )}
-        </main>
-      </div>
+            {activeTab === 'profile' && (
+              <ProfilePage
+                user={currentUser}
+              />
+            )}
+          </main>
+        </div>
+      )}
 
       {/* ── Global Search Modal ────────────────────────────────────── */}
       <SearchModal

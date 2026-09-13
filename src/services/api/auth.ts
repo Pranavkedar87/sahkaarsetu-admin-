@@ -115,15 +115,27 @@ export async function login(
 
 export async function fetchCurrentUser(): Promise<User> {
   const token = getStoredToken();
+  if (token) {
+    try {
+      const res = await request<BackendAdminUser>('/api/admin/auth/me');
+      if (res.data && res.data.id) {
+        const user = mapBackendUserToUser(res.data);
+        setStoredUser(user);
+        return user;
+      }
+    } catch {
+      // Token invalid, fall through to auto-login
+    }
+  }
+
+  // Auto-login the default admin to enable live backend requests without a login UI
   try {
-    const res = await request<BackendAdminUser>('/api/admin/auth/me');
-    if (res.data && res.data.id) {
-      const user = mapBackendUserToUser(res.data);
-      setStoredUser(user);
-      return user;
+    const loginRes = await login('admin@sahkaarsetu.local', 'SahkaarSetu@Admin2026');
+    if (loginRes.success && loginRes.user) {
+      return loginRes.user;
     }
   } catch {
-    // Fall back to default admin in demo mode
+    // Ignore and fallback
   }
 
   // Token is expired, absent, or backend in demo mode
