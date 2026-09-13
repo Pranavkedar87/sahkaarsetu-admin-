@@ -16,8 +16,8 @@ import {
   X,
   RefreshCw,
   Info,
-  Database,
-  ArrowRight,
+  Send,
+  Download,
 } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
@@ -32,11 +32,12 @@ import {
 import {
   getKnowledgeDocuments,
   searchKnowledgeChunks,
-  uploadDocumentPrototype,
-  approveAndPublishDocument,
-  rejectDocument,
+  uploadKnowledgeDocument,
+  submitDocumentForReview,
+  getDocumentDetails,
   ChunkSearchItem,
 } from '../services/api/knowledge';
+import { API_BASE_URL } from '../services/api/client';
 
 interface KnowledgePageProps {
   role: Role;
@@ -65,7 +66,10 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
   const [searchingVector, setSearchingVector] = useState(false);
   const [vectorSearchDone, setVectorSearchDone] = useState(false);
 
-  // Upload Form State
+  // Upload Form & Review State
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState<boolean>(false);
+  const [submittingReviewId, setSubmittingReviewId] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState('');
   const [newType, setNewType] = useState<DocumentType>('Circular');
   const [newSource, setNewSource] = useState('District Registrar Desk');
@@ -120,25 +124,24 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
     setIsDetailOpen(true);
   };
 
-  const handleApprove = async (docId: string) => {
-    const res = await approveAndPublishDocument(docId);
-    setToastMessage(res.message);
-    setTimeout(() => setToastMessage(null), 5000);
-    fetchDocs();
-    if (selectedDoc && selectedDoc.id === docId) {
-      setSelectedDoc({ ...selectedDoc, status: 'Published' });
-    }
-  };
-
-  const handleReject = async (docId: string) => {
-    const reason = prompt('Please provide feedback or reason for returning document to Draft:');
-    if (!reason) return;
-    const res = await rejectDocument(docId, reason);
-    setToastMessage(res.message);
-    setTimeout(() => setToastMessage(null), 5000);
-    fetchDocs();
-    if (selectedDoc && selectedDoc.id === docId) {
-      setSelectedDoc({ ...selectedDoc, status: 'Draft' });
+  const handleSubmitForReview = async (docId: string) => {
+    setSubmittingReviewId(docId);
+    try {
+      const res = await submitDocumentForReview(docId, 'Submitted for administrative compliance review.');
+      if (res.success && res.doc) {
+        setToastMessage(`Document moved to UNDER_REVIEW.`);
+        await fetchDocs();
+        if (selectedDoc && selectedDoc.id === docId) {
+          setSelectedDoc(res.doc);
+        }
+      } else {
+        setToastMessage(res.error || 'Failed to submit document for review.');
+      }
+    } catch (err: any) {
+      setToastMessage(err?.message || 'Error submitting for review.');
+    } finally {
+      setSubmittingReviewId(null);
+      setTimeout(() => setToastMessage(null), 5000);
     }
   };
 
@@ -156,32 +159,49 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
 
   const handleSubmitUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim()) return;
+    if (!newTitle.trim()) {
+      setToastMessage('Document title is required.');
+      return;
+    }
+    if (!selectedFile) {
+      setToastMessage('Please select a valid document file (.pdf, .txt, .md, .json, .csv).');
+      return;
+    }
 
-    const res = await uploadDocumentPrototype({
-      title: newTitle,
-      documentType: newType,
-      sourceName: newSource,
-      scope: newScope,
-      state: newState,
-      pacsName: newPacs || undefined,
-      scheme: newScheme || undefined,
-      language: newLanguage,
-      version: newVersion,
-      effectiveDate: newEffectiveDate,
-      expiryReviewDate: newExpiryDate,
-      applicability: newApplicability,
-      notes: newNotes,
-    });
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('title', newTitle.trim());
+      formData.append('document_type', newType);
+      formData.append('source_name', newSource.trim());
+      if (newNotes.trim()) formData.append('description', newNotes.trim());
+      if (newLanguage.trim()) formData.append('language', newLanguage.trim());
+      if (newVersion.trim()) formData.append('version', newVersion.trim());
+      if (newEffectiveDate) formData.append('effective_date', newEffectiveDate);
+      if (newExpiryDate) formData.append('expiry_review_date', newExpiryDate);
+      if (newScope.trim()) formData.append('jurisdiction', newScope.trim().toUpperCase());
+      if (newApplicability.trim()) formData.append('applicability', newApplicability.trim());
 
-    setToastMessage(res.message);
-    setTimeout(() => setToastMessage(null), 5000);
-    setIsUploadOpen(false);
-    // Reset form
-    setNewTitle('');
-    setNewNotes('');
-    setUploadStep(1);
-    fetchDocs();
+      const res = await uploadKnowledgeDocument(formData);
+      if (res.success && res.doc) {
+        setToastMessage(`Document "${res.doc.title}" registered as DRAFT (safe from citizen retrieval).`);
+        setIsUploadOpen(false);
+        // Reset
+        setSelectedFile(null);
+        setNewTitle('');
+        setNewNotes('');
+        setUploadStep(1);
+        await fetchDocs();
+      } else {
+        setToastMessage(res.error || 'Failed to upload document.');
+      }
+    } catch (err: any) {
+      setToastMessage(err?.message || 'Error uploading document.');
+    } finally {
+      setUploading(false);
+      setTimeout(() => setToastMessage(null), 6000);
+    }
   };
 
   return (
@@ -454,13 +474,26 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
                       {doc.lastUpdated}
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <button
-                        onClick={() => handleOpenDoc(doc)}
-                        className="btn btn-secondary btn-sm"
-                        style={{ padding: '0.25rem 0.5rem' }}
-                      >
-                        Inspect & Versions
-                      </button>
+                      <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                        {(doc.status === 'Draft' || doc.status?.toLowerCase() === 'draft') && (
+                          <button
+                            onClick={() => handleSubmitForReview(doc.id)}
+                            disabled={submittingReviewId === doc.id}
+                            className="btn btn-primary btn-sm"
+                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                            title="Submit draft document for admin review"
+                          >
+                            <Send size={12} /> {submittingReviewId === doc.id ? 'Submitting...' : 'Submit Review'}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleOpenDoc(doc)}
+                          className="btn btn-secondary btn-sm"
+                          style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                        >
+                          Inspect & Details
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -470,39 +503,31 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
         </div>
       )}
 
-      {/* Document Detail & Version History Modal (Acceptance Demo 3) */}
+      {/* Document Detail & Version History Modal (Phase 2B.2 Governance) */}
       {selectedDoc && (
         <Modal
           isOpen={isDetailOpen}
           onClose={() => setIsDetailOpen(false)}
           title={selectedDoc.title}
           subtitle={`Type: ${selectedDoc.documentType} • Source: ${selectedDoc.sourceName}`}
-          badge={<Badge variant={selectedDoc.status === 'Published' ? 'success' : 'warning'}>{selectedDoc.status}</Badge>}
+          badge={<Badge variant={selectedDoc.status === 'Published' ? 'success' : selectedDoc.status === 'Under Review' ? 'warning' : 'neutral'}>{selectedDoc.status}</Badge>}
           maxWidth="760px"
           footer={
-            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
               <span style={{ fontSize: '0.75rem', color: 'var(--slate-500)' }}>
                 {selectedDoc.isRealBackend
-                  ? 'Source: Live FastAPI GET /api/knowledge/documents'
+                  ? 'Connected to FastAPI Knowledge Engine'
                   : 'Source: Centralized Demo Knowledge Base'}
               </span>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                {selectedDoc.status !== 'Published' && (
-                  <>
-                    <button
-                      onClick={() => handleReject(selectedDoc.id)}
-                      className="btn btn-secondary btn-sm"
-                      style={{ color: 'var(--danger-700)' }}
-                    >
-                      <X size={14} /> Reject / Request Changes
-                    </button>
-                    <button
-                      onClick={() => handleApprove(selectedDoc.id)}
-                      className="btn btn-primary btn-sm"
-                    >
-                      <Check size={14} /> Approve & Publish
-                    </button>
-                  </>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                {(selectedDoc.status === 'Draft' || selectedDoc.status?.toLowerCase() === 'draft') && (
+                  <button
+                    onClick={() => handleSubmitForReview(selectedDoc.id)}
+                    disabled={submittingReviewId === selectedDoc.id}
+                    className="btn btn-primary btn-sm"
+                  >
+                    <Send size={14} /> {submittingReviewId === selectedDoc.id ? 'Submitting...' : 'Submit for Review'}
+                  </button>
                 )}
                 <button onClick={() => setIsDetailOpen(false)} className="btn btn-secondary btn-sm">
                   Close
@@ -512,7 +537,34 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
           }
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {/* Metadata Fields Section */}
+            {/* Governance Safeguard Banner */}
+            <div
+              style={{
+                padding: '0.75rem',
+                backgroundColor: selectedDoc.is_current ? 'var(--success-50)' : 'var(--trust-50)',
+                border: `1px solid ${selectedDoc.is_current ? '#86efac' : '#bfdbfe'}`,
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                color: selectedDoc.is_current ? 'var(--success-800)' : 'var(--trust-800)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div>
+                <strong>Grounding Safety Gate: </strong>
+                {selectedDoc.is_current ? (
+                  <span>✅ Active in live Citizen RAG vector retrieval</span>
+                ) : (
+                  <span>🛡️ <strong>ISOLATED</strong> — Cannot participate in citizen RAG search (status={selectedDoc.status}, is_current=false).</span>
+                )}
+              </div>
+              <Badge variant={selectedDoc.is_current ? 'success' : 'neutral'}>
+                {selectedDoc.is_current ? 'CURRENT' : 'INACTIVE'}
+              </Badge>
+            </div>
+
+            {/* Governance & Administrative Metadata */}
             <div
               style={{
                 backgroundColor: 'var(--slate-50)',
@@ -522,12 +574,14 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
               }}
             >
               <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--slate-800)', marginBottom: '0.5rem' }}>
-                Document Metadata & Scope
+                Governance & Administrative Fields
               </h4>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.8rem' }}>
-                <div><strong style={{ color: 'var(--slate-500)' }}>Scope:</strong> {selectedDoc.scope}</div>
-                <div><strong style={{ color: 'var(--slate-500)' }}>State / Region:</strong> {selectedDoc.state || 'All India'}</div>
-                <div><strong style={{ color: 'var(--slate-500)' }}>Applicable Scheme:</strong> {selectedDoc.scheme || 'General Cooperative'}</div>
+                <div><strong style={{ color: 'var(--slate-500)' }}>Verification Status:</strong> {selectedDoc.verificationStatus || 'NEEDS_VERIFICATION'}</div>
+                <div><strong style={{ color: 'var(--slate-500)' }}>Currentness Status:</strong> {selectedDoc.currentnessStatus || 'NEEDS_VERIFICATION'}</div>
+                <div><strong style={{ color: 'var(--slate-500)' }}>Authority Level:</strong> {selectedDoc.authorityLevel || 'DISTRICT'}</div>
+                <div><strong style={{ color: 'var(--slate-500)' }}>Precedence Tier:</strong> Tier {selectedDoc.precedenceTier ?? 4}</div>
+                <div><strong style={{ color: 'var(--slate-500)' }}>Jurisdiction:</strong> {selectedDoc.jurisdiction || selectedDoc.scope || 'General'}</div>
                 <div><strong style={{ color: 'var(--slate-500)' }}>Language:</strong> {selectedDoc.language}</div>
                 <div><strong style={{ color: 'var(--slate-500)' }}>Effective Date:</strong> {selectedDoc.effectiveDate}</div>
                 <div><strong style={{ color: 'var(--slate-500)' }}>Review / Expiry:</strong> {selectedDoc.expiryReviewDate || 'Perpetual unless amended'}</div>
@@ -542,7 +596,40 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
               </div>
             </div>
 
-            {/* Version History Section (Requirement 4) */}
+            {/* Uploaded File Assets & Download */}
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                padding: '0.85rem 1rem',
+                borderRadius: '8px',
+                border: '1px solid var(--border-color)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--slate-900)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <FileText size={16} style={{ color: 'var(--primary-700)' }} />
+                  {selectedDoc.fileName || `${selectedDoc.title}.pdf`}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--slate-500)', marginTop: '0.15rem' }}>
+                  {selectedDoc.fileSizeBytes ? `${(selectedDoc.fileSizeBytes / 1024).toFixed(1)} KB` : 'Verified source attachment'}
+                </div>
+              </div>
+
+              <a
+                href={`${API_BASE_URL}/api/admin/knowledge/documents/${selectedDoc.id}/file`}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-secondary btn-sm"
+                style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', textDecoration: 'none' }}
+              >
+                <Download size={14} /> Download Document
+              </a>
+            </div>
+
+            {/* Version History Section */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
                 <History size={16} style={{ color: 'var(--primary-700)' }} />
@@ -603,18 +690,19 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
               )}
             </div>
 
-            {/* Note on legal updates */}
+            {/* Note on Phase 2B.2 vs Phase 2B.3 */}
             <div
               style={{
                 padding: '0.75rem',
-                backgroundColor: 'var(--trust-50)',
+                backgroundColor: 'var(--warning-50)',
+                border: '1px solid #fde68a',
                 borderRadius: '6px',
                 fontSize: '0.75rem',
-                color: 'var(--trust-800)',
+                color: 'var(--warning-800)',
                 lineHeight: 1.4,
               }}
             >
-              🔒 <strong>Operational Principle:</strong> When statutory amendments occur, staff publish a verified new version here. The AI RAG retriever instantly grounds future answers on the latest text chunks without needing retraining or weights fine-tuning.
+              🔒 <strong>Phase 2B.2 Protocol:</strong> Ingestion and administrative review only. Vector chunking and citizen RAG publishing are restricted to Phase 2B.3. No unapproved draft can enter citizen retrieval.
             </div>
           </div>
         </Modal>
@@ -655,6 +743,32 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
             <span style={{ color: 'var(--warning-700)' }}>
               3. Verification Required
             </span>
+          </div>
+
+          {/* File Picker */}
+          <div className="form-group">
+            <label className="form-label">Document Source File (.pdf, .txt, .md, .json, .csv) *</label>
+            <input
+              type="file"
+              required
+              accept=".pdf,.txt,.md,.json,.csv"
+              onChange={(e) => {
+                const f = e.target.files?.[0] || null;
+                setSelectedFile(f);
+                if (f && !newTitle) {
+                  // Auto-populate title from clean filename
+                  const base = f.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+                  setNewTitle(base.charAt(0).toUpperCase() + base.slice(1));
+                }
+              }}
+              className="form-input"
+              style={{ padding: '0.5rem' }}
+            />
+            {selectedFile && (
+              <div style={{ fontSize: '0.75rem', color: 'var(--trust-700)', marginTop: '0.35rem', fontWeight: 600 }}>
+                Attached: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+              </div>
+            )}
           </div>
 
           <div className="form-group">
@@ -784,15 +898,15 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
               color: 'var(--warning-700)',
             }}
           >
-            ⚠️ <strong>Safety Rule:</strong> Newly uploaded documents are marked as <strong>"Pending Verification"</strong>. They will NOT be indexed into live AI vector retrieval until an Admin performs review and explicitly approves publication.
+            ⚠️ <strong>Safety Rule:</strong> Newly uploaded documents are marked as <strong>"DRAFT / NEEDS_VERIFICATION"</strong>. They will NOT be indexed into live AI vector retrieval until an Admin explicitly approves and publishes them in Phase 2B.3.
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
-            <button type="button" onClick={() => setIsUploadOpen(false)} className="btn btn-secondary btn-sm">
+            <button type="button" onClick={() => setIsUploadOpen(false)} className="btn btn-secondary btn-sm" disabled={uploading}>
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary btn-sm">
-              Register Document for Review
+            <button type="submit" className="btn btn-primary btn-sm" disabled={uploading}>
+              {uploading ? 'Uploading & Registering...' : 'Register Document as Draft'}
             </button>
           </div>
         </form>

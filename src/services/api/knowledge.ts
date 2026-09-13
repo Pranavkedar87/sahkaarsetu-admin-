@@ -2,14 +2,42 @@ import { request } from './client';
 import { KnowledgeDoc, DocumentType, DocumentStatus } from '../../types';
 import { DEMO_KNOWLEDGE_DOCS } from '../../data/demo';
 
-interface BackendDocItem {
-  id?: string;
+export interface AdminDocBackendItem {
+  id: string;
   title: string;
   description?: string;
   source_name?: string;
   source_url?: string;
-  document_type?: string;
-  language?: string;
+  document_type: string;
+  language: string;
+  status: string;
+  version: string;
+  is_current: boolean;
+  authority_level?: string;
+  jurisdiction?: string;
+  applicability?: string[];
+  year?: number;
+  effective_date?: string;
+  expiry_review_date?: string;
+  verification_status: string;
+  currentness_status: string;
+  precedence_tier: number;
+  raw_file_url?: string;
+  storage_path?: string;
+  file_name?: string;
+  file_size_bytes?: number;
+  mime_type?: string;
+  review_notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AdminKnowledgeListBackendResponse {
+  items: AdminDocBackendItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
 }
 
 export interface ChunkSearchItem {
@@ -31,7 +59,77 @@ export interface KnowledgeSearchResult {
   isRealBackend: boolean;
 }
 
-// In-memory document state to allow local demonstration of Upload, Approval, Reject, and Versioning
+function mapBackendStatusToFrontend(backendStatus: string): DocumentStatus {
+  const s = (backendStatus || '').toLowerCase().trim();
+  if (s === 'draft') return 'Draft';
+  if (s === 'under_review') return 'Under Review';
+  if (s === 'verified') return 'Verified';
+  if (s === 'published') return 'Published';
+  if (s === 'review_due') return 'Review Due';
+  if (s === 'outdated' || s === 'superseded') return 'Outdated';
+  return 'Draft';
+}
+
+function mapBackendTypeToFrontend(docType: string): DocumentType {
+  const dt = (docType || '').toLowerCase().trim();
+  if (dt.includes('law') || dt.includes('act')) return 'Cooperative Law';
+  if (dt.includes('bylaw') || dt.includes('by-law')) return 'By-laws';
+  if (dt.includes('scheme')) return 'Government Scheme';
+  if (dt.includes('circular')) return 'Circular';
+  if (dt.includes('pacs')) return 'PACS Document';
+  if (dt.includes('pmfby') || dt.includes('agri')) return 'PMFBY / Agriculture';
+  if (dt.includes('finan')) return 'Financial Literacy';
+  if (dt.includes('guide')) return 'Guidelines';
+  return 'Other Official Document';
+}
+
+export function mapAdminDocToFrontend(bDoc: AdminDocBackendItem): KnowledgeDoc {
+  const status = mapBackendStatusToFrontend(bDoc.status);
+  const docType = mapBackendTypeToFrontend(bDoc.document_type);
+  const appStr = Array.isArray(bDoc.applicability) ? bDoc.applicability.join(', ') : 'All Cooperatives';
+
+  return {
+    id: bDoc.id,
+    title: bDoc.title,
+    description: bDoc.description || 'Registered in official backend knowledge repository',
+    sourceName: bDoc.source_name || 'Government Authority',
+    sourceUrl: bDoc.source_url || undefined,
+    documentType: docType,
+    scope: bDoc.jurisdiction ? `${bDoc.jurisdiction} Jurisdiction` : 'State Authority',
+    state: bDoc.jurisdiction === 'MAHARASHTRA' ? 'Maharashtra' : undefined,
+    language: bDoc.language || 'en',
+    version: bDoc.version || 'v1.0',
+    effectiveDate: bDoc.effective_date || bDoc.created_at?.split('T')[0] || '2026-01-01',
+    expiryReviewDate: bDoc.expiry_review_date || undefined,
+    applicability: appStr,
+    status: status,
+    lastUpdated: bDoc.updated_at ? bDoc.updated_at.split('T')[0] : 'Recently',
+    isRealBackend: true,
+    notes: bDoc.review_notes || undefined,
+    is_current: bDoc.is_current,
+    verificationStatus: bDoc.verification_status,
+    currentnessStatus: bDoc.currentness_status,
+    authorityLevel: bDoc.authority_level,
+    jurisdiction: bDoc.jurisdiction,
+    precedenceTier: bDoc.precedence_tier,
+    rawFileUrl: bDoc.raw_file_url,
+    fileName: bDoc.file_name,
+    fileSizeBytes: bDoc.file_size_bytes,
+    reviewNotes: bDoc.review_notes,
+    versions: [
+      {
+        version: bDoc.version || 'v1.0',
+        effectiveDate: bDoc.effective_date || '2026-01-01',
+        status: bDoc.is_current ? 'Current' : 'Draft',
+        verificationState: bDoc.verification_status || 'Needs Verification',
+        updatedBy: 'Operations Authority',
+        notes: bDoc.review_notes || 'Initial document registration in repository.',
+      },
+    ],
+  };
+}
+
+// In-memory fallback if backend is offline
 let localDocsState: KnowledgeDoc[] = [...DEMO_KNOWLEDGE_DOCS];
 
 export async function getKnowledgeDocuments(): Promise<{
@@ -39,49 +137,84 @@ export async function getKnowledgeDocuments(): Promise<{
   isRealBackend: boolean;
   sourceLabel: string;
 }> {
-  const res = await request<BackendDocItem[]>('/api/knowledge/documents');
+  // First try the real admin knowledge endpoint
+  const res = await request<AdminKnowledgeListBackendResponse>('/api/admin/knowledge/documents?page_size=100');
 
-  if (res.isRealBackend && res.data && Array.isArray(res.data) && res.data.length > 0) {
-    const realDocs: KnowledgeDoc[] = res.data.map((item, idx) => ({
-      id: item.id || `BACKEND-DOC-${idx + 1}`,
-      title: item.title,
-      description: item.description || 'Registered in official backend knowledge repository',
-      sourceName: item.source_name || 'Government Authority',
-      sourceUrl: item.source_url || undefined,
-      documentType: (item.document_type as DocumentType) || 'Guidelines',
-      scope: 'State / National Authority',
-      language: item.language || 'en',
-      version: 'v1.0 (Live)',
-      effectiveDate: '2025-01-01',
-      status: 'Published' as DocumentStatus,
-      lastUpdated: 'Live Database',
-      isRealBackend: true,
-      versions: [
-        {
-          version: 'v1.0',
-          effectiveDate: '2025-01-01',
-          status: 'Current',
-          verificationState: 'Verified via Backend API',
-          updatedBy: 'System Synced',
-          notes: 'Retrieved directly from GET /api/knowledge/documents',
-        },
-      ],
-    }));
-
-    // Merge with our demo docs so operational workflow demo documents remain accessible
+  if (res.isRealBackend && res.data && Array.isArray(res.data.items)) {
+    const realDocs: KnowledgeDoc[] = res.data.items.map(mapAdminDocToFrontend);
     return {
-      docs: [...realDocs, ...localDocsState],
+      docs: realDocs,
       isRealBackend: true,
-      sourceLabel: `Connected to live backend (${realDocs.length} live docs + ${localDocsState.length} operational demos)`,
+      sourceLabel: `Live Backend Data (${realDocs.length} documents registered)`,
     };
   }
 
-  // Fallback to centralized demo data
+  // Fallback to demo documents
   return {
     docs: localDocsState,
     isRealBackend: false,
     sourceLabel: 'Demonstration Knowledge Base (Backend API standby)',
   };
+}
+
+export async function uploadKnowledgeDocument(formData: FormData): Promise<{
+  success: boolean;
+  doc?: KnowledgeDoc;
+  error?: string;
+}> {
+  const res = await request<AdminDocBackendItem>('/api/admin/knowledge/documents', {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (res.data && res.data.id) {
+    const doc = mapAdminDocToFrontend(res.data);
+    // Also cache in local state for seamless immediate feedback
+    localDocsState = [doc, ...localDocsState.filter((d) => d.id !== doc.id)];
+    return { success: true, doc };
+  }
+
+  return {
+    success: false,
+    error: res.error || 'Failed to upload document to operations backend.',
+  };
+}
+
+export async function submitDocumentForReview(
+  docId: string,
+  notes?: string
+): Promise<{
+  success: boolean;
+  doc?: KnowledgeDoc;
+  error?: string;
+}> {
+  const res = await request<{
+    status: string;
+    message: string;
+    document: AdminDocBackendItem;
+  }>(`/api/admin/knowledge/documents/${docId}/review`, {
+    method: 'POST',
+    body: JSON.stringify({ notes }),
+  });
+
+  if (res.data && res.data.document) {
+    const doc = mapAdminDocToFrontend(res.data.document);
+    localDocsState = localDocsState.map((d) => (d.id === doc.id ? doc : d));
+    return { success: true, doc };
+  }
+
+  return {
+    success: false,
+    error: res.error || 'Failed to submit document for review.',
+  };
+}
+
+export async function getDocumentDetails(docId: string): Promise<KnowledgeDoc | null> {
+  const res = await request<AdminDocBackendItem>(`/api/admin/knowledge/documents/${docId}`);
+  if (res.data && res.data.id) {
+    return mapAdminDocToFrontend(res.data);
+  }
+  return null;
 }
 
 export async function searchKnowledgeChunks(
@@ -103,159 +236,18 @@ export async function searchKnowledgeChunks(
     };
   }
 
-  // Fallback demo chunks matching
-  const qLower = query.toLowerCase();
-  const matchedChunks: ChunkSearchItem[] = [
-    {
-      content:
-        'Section 73CB of the Maharashtra Cooperative Societies Act governs the state cooperative election authority. Elections must be conducted before the expiration of the 5-year managing committee tenure.',
-      document_id: 'DOC-MH-2025-01',
-      title: 'Maharashtra Cooperative Societies Act, 1960 (Amended 2024)',
-      source_name: 'Dept of Cooperation, Govt of Maharashtra',
-      document_type: 'Cooperative Law',
-      language: 'en',
-      similarity: 0.88,
-    },
-    {
-      content:
-        'Clause 15.2 PMFBY: In localized calamities (hailstorm, landslide, inundation), loss intimation must be submitted within 72 hours via Crop Insurance App, toll-free portal, or offline Annexure-IV to PACS secretary.',
-      document_id: 'DOC-PMFBY-2025-04',
-      title: 'PMFBY Operational Guidelines 2025–26',
-      source_name: 'Ministry of Agriculture',
-      document_type: 'PMFBY / Agriculture',
-      language: 'en',
-      similarity: 0.82,
-    },
-    {
-      content:
-        'PACS Model By-laws Clause 8: A Primary Agricultural Credit Society may undertake retail supply of fertilizers, seeds, pesticides, and manage cold storage/warehouses under AIF scheme.',
-      document_id: 'DOC-PACS-BYLAWS-2024',
-      title: 'Model By-laws for PACS (Computerization Edition)',
-      source_name: 'NABARD & Ministry of Cooperation',
-      document_type: 'By-laws',
-      language: 'en',
-      similarity: 0.76,
-    },
-  ].filter(
-    (c) =>
-      c.content.toLowerCase().includes(qLower) ||
-      c.title.toLowerCase().includes(qLower) ||
-      qLower.length <= 3
-  );
-
   return {
     query,
     language,
-    chunks: matchedChunks.length > 0 ? matchedChunks : [
+    chunks: [
       {
-        content: `Knowledge chunk indexing match for query: "${query}". Real vector similarity available when FastAPI backend has live pgvector embeddings connected.`,
-        document_id: 'DEMO-SIM-01',
-        title: 'Model Cooperative Retrieval Chunk',
-        source_name: 'SahkaarSetu RAG Vector Index',
-        similarity: 0.74,
+        content: `Search query "${query}" executed. Real vector search returns chunks from published, current corpus.`,
+        document_id: 'INFO-01',
+        title: 'Governed Knowledge Index',
+        similarity: 0.85,
       },
     ],
-    count: matchedChunks.length || 1,
+    count: 1,
     isRealBackend: false,
-  };
-}
-
-export async function uploadDocumentPrototype(doc: {
-  title: string;
-  documentType: DocumentType;
-  sourceName: string;
-  sourceUrl?: string;
-  scope: string;
-  state?: string;
-  pacsName?: string;
-  scheme?: string;
-  language: string;
-  version: string;
-  effectiveDate: string;
-  expiryReviewDate?: string;
-  applicability?: string;
-  notes?: string;
-}): Promise<{ doc: KnowledgeDoc; message: string }> {
-  // Prototype simulation: Document upload is saved into local state with "Under Review" / "Pending Verification"
-  const newDoc: KnowledgeDoc = {
-    id: `DOC-PENDING-${Date.now().toString().slice(-4)}`,
-    title: doc.title,
-    documentType: doc.documentType,
-    sourceName: doc.sourceName,
-    sourceUrl: doc.sourceUrl,
-    scope: doc.scope,
-    state: doc.state,
-    pacsName: doc.pacsName,
-    scheme: doc.scheme,
-    language: doc.language,
-    version: doc.version || 'v1.0-draft',
-    effectiveDate: doc.effectiveDate || new Date().toISOString().split('T')[0],
-    expiryReviewDate: doc.expiryReviewDate,
-    applicability: doc.applicability,
-    status: 'Under Review',
-    lastUpdated: new Date().toISOString().split('T')[0],
-    isRealBackend: false,
-    chunkCount: 0,
-    notes: doc.notes,
-    versions: [
-      {
-        version: doc.version || 'v1.0-draft',
-        effectiveDate: doc.effectiveDate || new Date().toISOString().split('T')[0],
-        status: 'Draft',
-        verificationState: 'Pending Verification by Admin',
-        updatedBy: 'Operations Staff (Upload Portal)',
-        notes: doc.notes || 'Initial document upload awaiting review.',
-      },
-    ],
-  };
-
-  localDocsState = [newDoc, ...localDocsState];
-  return {
-    doc: newDoc,
-    message: 'Document successfully registered for verification. (Prototype Demo: Awaiting Backend Upload API)',
-  };
-}
-
-export async function approveAndPublishDocument(docId: string): Promise<{
-  success: boolean;
-  message: string;
-}> {
-  const target = localDocsState.find((d) => d.id === docId);
-  if (target) {
-    target.status = 'Published';
-    target.lastUpdated = new Date().toISOString().split('T')[0];
-    if (target.versions && target.versions.length > 0) {
-      target.versions[0].status = 'Current';
-      target.versions[0].verificationState = 'Approved & Published by Admin';
-    }
-    return {
-      success: true,
-      message: `Document "${target.title}" approved and marked as Published. (Note: Vector re-index prototype step simulated)`,
-    };
-  }
-  return {
-    success: false,
-    message: 'Document not found.',
-  };
-}
-
-export async function rejectDocument(docId: string, reason: string): Promise<{
-  success: boolean;
-  message: string;
-}> {
-  const target = localDocsState.find((d) => d.id === docId);
-  if (target) {
-    target.status = 'Draft';
-    if (target.versions && target.versions.length > 0) {
-      target.versions[0].verificationState = `Changes Requested: ${reason}`;
-    }
-    return {
-      success: true,
-      message: `Document returned to Draft status. Feedback recorded: "${reason}"`,
-    };
-  }
-  return {
-    success: false,
-    message: 'Document not found.',
   };
 }

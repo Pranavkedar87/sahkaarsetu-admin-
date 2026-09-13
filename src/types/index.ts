@@ -96,6 +96,16 @@ export interface KnowledgeDoc {
   chunkCount?: number;
   versions?: DocumentVersion[];
   notes?: string;
+  is_current?: boolean;
+  verificationStatus?: string;
+  currentnessStatus?: string;
+  authorityLevel?: string;
+  jurisdiction?: string;
+  precedenceTier?: number;
+  rawFileUrl?: string;
+  fileName?: string;
+  fileSizeBytes?: number;
+  reviewNotes?: string;
 }
 
 export type GrievanceStatus = 'New' | 'Assigned' | 'In Progress' | 'Escalated' | 'Resolved';
