@@ -34,8 +34,12 @@ import {
   searchKnowledgeChunks,
   uploadKnowledgeDocument,
   submitDocumentForReview,
+  verifyKnowledgeDocument,
+  publishKnowledgeDocument,
+  rejectKnowledgeDocument,
   getDocumentDetails,
   ChunkSearchItem,
+  VerifyPayload,
 } from '../services/api/knowledge';
 import { API_BASE_URL } from '../services/api/client';
 
@@ -70,6 +74,21 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState<boolean>(false);
   const [submittingReviewId, setSubmittingReviewId] = useState<string | null>(null);
+  const [verifyingDoc, setVerifyingDoc] = useState<KnowledgeDoc | null>(null);
+  const [publishingDoc, setPublishingDoc] = useState<KnowledgeDoc | null>(null);
+  const [isPublishing, setIsPublishing] = useState<boolean>(false);
+  const [isVerifying, setIsVerifying] = useState<boolean>(false);
+  const [publishNotes, setPublishNotes] = useState<string>('');
+
+  // Verification Form State
+  const [verifyAuthority, setVerifyAuthority] = useState<string>('STATE_GOVERNMENT');
+  const [verifyJurisdiction, setVerifyJurisdiction] = useState<string>('MAHARASHTRA');
+  const [verifyApplicability, setVerifyApplicability] = useState<string>('All Primary Agricultural Credit Societies');
+  const [verifyEffectiveDate, setVerifyEffectiveDate] = useState<string>('2026-06-01');
+  const [verifyExpiryDate, setVerifyExpiryDate] = useState<string>('2027-12-31');
+  const [verifyPrecedence, setVerifyPrecedence] = useState<number>(50);
+  const [verifyNotes, setVerifyNotes] = useState<string>('Verified administrative authority and statutory validity.');
+
   const [newTitle, setNewTitle] = useState('');
   const [newType, setNewType] = useState<DocumentType>('Circular');
   const [newSource, setNewSource] = useState('District Registrar Desk');
@@ -122,6 +141,102 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
   const handleOpenDoc = (doc: KnowledgeDoc) => {
     setSelectedDoc(doc);
     setIsDetailOpen(true);
+  };
+
+  const handleOpenVerify = (doc: KnowledgeDoc) => {
+    setVerifyingDoc(doc);
+    setVerifyAuthority(doc.authorityLevel || 'STATE_GOVERNMENT');
+    setVerifyJurisdiction(doc.jurisdiction || 'MAHARASHTRA');
+    setVerifyApplicability(doc.applicability || 'All Primary Agricultural Credit Societies');
+    setVerifyEffectiveDate(doc.effectiveDate || '2026-06-01');
+    setVerifyExpiryDate(doc.expiryReviewDate || '2027-12-31');
+    setVerifyPrecedence(doc.precedenceTier || 50);
+    setVerifyNotes(doc.notes || 'Verified administrative authority and statutory validity.');
+  };
+
+  const handleSubmitVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!verifyingDoc) return;
+
+    setIsVerifying(true);
+    try {
+      const res = await verifyKnowledgeDocument(verifyingDoc.id, {
+        authority_level: verifyAuthority,
+        jurisdiction: verifyJurisdiction,
+        applicability: [verifyApplicability],
+        effective_date: verifyEffectiveDate,
+        expiry_review_date: verifyExpiryDate,
+        precedence_tier: Number(verifyPrecedence),
+        verification_notes: verifyNotes,
+      });
+
+      if (res.success && res.doc) {
+        setToastMessage(`Document "${res.doc.title}" successfully verified by Administrator.`);
+        setVerifyingDoc(null);
+        await fetchDocs();
+        if (selectedDoc && selectedDoc.id === verifyingDoc.id) {
+          setSelectedDoc(res.doc);
+        }
+      } else {
+        setToastMessage(res.error || 'Failed to verify document.');
+      }
+    } catch (err: any) {
+      setToastMessage(err?.message || 'Error verifying document.');
+    } finally {
+      setIsVerifying(false);
+      setTimeout(() => setToastMessage(null), 6000);
+    }
+  };
+
+  const handleOpenPublish = (doc: KnowledgeDoc) => {
+    setPublishingDoc(doc);
+    setPublishNotes('Approved for publication by State Registrar Operations.');
+  };
+
+  const handleConfirmPublish = async () => {
+    if (!publishingDoc) return;
+
+    setIsPublishing(true);
+    try {
+      const res = await publishKnowledgeDocument(publishingDoc.id, publishNotes);
+      if (res.success && res.doc) {
+        setToastMessage(`Document published! ${res.chunksCount || 0} chunks embedded (768-dim) and activated in live RAG.`);
+        setPublishingDoc(null);
+        await fetchDocs();
+        if (selectedDoc && selectedDoc.id === publishingDoc.id) {
+          setSelectedDoc(res.doc);
+        }
+      } else {
+        setToastMessage(res.error || 'Failed to publish document.');
+      }
+    } catch (err: any) {
+      setToastMessage(err?.message || 'Error publishing document.');
+    } finally {
+      setIsPublishing(false);
+      setTimeout(() => setToastMessage(null), 7000);
+    }
+  };
+
+  const handleReject = async (docId: string) => {
+    const reason = prompt('Please provide reason for returning document to DRAFT:');
+    if (!reason) return;
+
+    try {
+      const res = await rejectKnowledgeDocument(docId, reason);
+      if (res.success && res.doc) {
+        setToastMessage(`Document returned to DRAFT.`);
+        await fetchDocs();
+        if (selectedDoc && selectedDoc.id === docId) {
+          setSelectedDoc(res.doc);
+        }
+      } else {
+        setToastMessage(res.error || 'Failed to return document to draft.');
+      }
+    } catch (err: any) {
+      setToastMessage(err?.message || 'Error rejecting document.');
+    } finally {
+      setTimeout(() => setToastMessage(null), 5000);
+    }
   };
 
   const handleSubmitForReview = async (docId: string) => {
@@ -486,6 +601,38 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
                             <Send size={12} /> {submittingReviewId === doc.id ? 'Submitting...' : 'Submit Review'}
                           </button>
                         )}
+                        {(doc.status === 'Under Review' || doc.status?.toLowerCase() === 'under_review') && (
+                          role === 'ADMIN' ? (
+                            <button
+                              onClick={() => handleOpenVerify(doc)}
+                              className="btn btn-primary btn-sm"
+                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', backgroundColor: 'var(--trust-700)' }}
+                              title="Verify governance evidence (ADMIN only)"
+                            >
+                              <CheckCircle2 size={12} /> Verify Evidence
+                            </button>
+                          ) : (
+                            <span className="badge" style={{ backgroundColor: 'var(--warning-100)', color: 'var(--warning-800)', fontSize: '0.7rem' }}>
+                              Under Admin Review
+                            </span>
+                          )
+                        )}
+                        {(doc.status === 'Verified' || doc.status?.toLowerCase() === 'verified') && (
+                          role === 'ADMIN' ? (
+                            <button
+                              onClick={() => handleOpenPublish(doc)}
+                              className="btn btn-primary btn-sm"
+                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', backgroundColor: 'var(--success-700)' }}
+                              title="Publish verified document into live citizen RAG (ADMIN only)"
+                            >
+                              <Sparkles size={12} /> Approve & Publish
+                            </button>
+                          ) : (
+                            <span className="badge" style={{ backgroundColor: 'var(--success-100)', color: 'var(--success-800)', fontSize: '0.7rem' }}>
+                              Pending Admin Publish
+                            </span>
+                          )
+                        )}
                         <button
                           onClick={() => handleOpenDoc(doc)}
                           className="btn btn-secondary btn-sm"
@@ -503,14 +650,14 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
         </div>
       )}
 
-      {/* Document Detail & Version History Modal (Phase 2B.2 Governance) */}
+      {/* Document Detail & Version History Modal (Phase 2B.3 Governance) */}
       {selectedDoc && (
         <Modal
           isOpen={isDetailOpen}
           onClose={() => setIsDetailOpen(false)}
           title={selectedDoc.title}
           subtitle={`Type: ${selectedDoc.documentType} • Source: ${selectedDoc.sourceName}`}
-          badge={<Badge variant={selectedDoc.status === 'Published' ? 'success' : selectedDoc.status === 'Under Review' ? 'warning' : 'neutral'}>{selectedDoc.status}</Badge>}
+          badge={<Badge variant={selectedDoc.status === 'Published' ? 'success' : selectedDoc.status === 'Verified' ? 'success' : selectedDoc.status === 'Under Review' ? 'warning' : 'neutral'}>{selectedDoc.status}</Badge>}
           maxWidth="760px"
           footer={
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -528,6 +675,60 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
                   >
                     <Send size={14} /> {submittingReviewId === selectedDoc.id ? 'Submitting...' : 'Submit for Review'}
                   </button>
+                )}
+                {(selectedDoc.status === 'Under Review' || selectedDoc.status?.toLowerCase() === 'under_review') && (
+                  role === 'ADMIN' ? (
+                    <>
+                      <button
+                        onClick={() => handleReject(selectedDoc.id)}
+                        className="btn btn-secondary btn-sm"
+                        style={{ color: 'var(--danger-700)' }}
+                      >
+                        <X size={14} /> Reject to Draft
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsDetailOpen(false);
+                          handleOpenVerify(selectedDoc);
+                        }}
+                        className="btn btn-primary btn-sm"
+                        style={{ backgroundColor: 'var(--trust-700)' }}
+                      >
+                        <CheckCircle2 size={14} /> Verify Governance Evidence
+                      </button>
+                    </>
+                  ) : (
+                    <span style={{ fontSize: '0.75rem', color: 'var(--warning-700)', fontWeight: 600 }}>
+                      Under administrative verification
+                    </span>
+                  )
+                )}
+                {(selectedDoc.status === 'Verified' || selectedDoc.status?.toLowerCase() === 'verified') && (
+                  role === 'ADMIN' ? (
+                    <>
+                      <button
+                        onClick={() => handleReject(selectedDoc.id)}
+                        className="btn btn-secondary btn-sm"
+                        style={{ color: 'var(--danger-700)' }}
+                      >
+                        <X size={14} /> Return to Draft
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsDetailOpen(false);
+                          handleOpenPublish(selectedDoc);
+                        }}
+                        className="btn btn-primary btn-sm"
+                        style={{ backgroundColor: 'var(--success-700)' }}
+                      >
+                        <Sparkles size={14} /> Approve & Publish to Live RAG
+                      </button>
+                    </>
+                  ) : (
+                    <span style={{ fontSize: '0.75rem', color: 'var(--success-700)', fontWeight: 600 }}>
+                      Verified. Admin publication pending.
+                    </span>
+                  )
                 )}
                 <button onClick={() => setIsDetailOpen(false)} className="btn btn-secondary btn-sm">
                   Close
@@ -993,6 +1194,223 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
           )}
         </div>
       </Modal>
+
+      {/* Document Verification Modal (ADMIN-only Phase 2B.3) */}
+      {verifyingDoc && (
+        <Modal
+          isOpen={!!verifyingDoc}
+          onClose={() => setVerifyingDoc(null)}
+          title={`Verify Governance Evidence: ${verifyingDoc.title}`}
+          subtitle="Legal verification and compliance certification before publication"
+          badge={<Badge variant="warning">Administrative Verification</Badge>}
+          maxWidth="680px"
+        >
+          <form onSubmit={handleSubmitVerify} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div
+              style={{
+                padding: '0.75rem',
+                backgroundColor: 'var(--trust-50)',
+                border: '1px solid #bfdbfe',
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                color: 'var(--trust-800)',
+              }}
+            >
+              ℹ️ <strong>Governance Rule:</strong> Verification validates issuing authority, statutory jurisdiction, and target applicability. Only verified documents may proceed to publication.
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div className="form-group">
+                <label className="form-label">Authority Level *</label>
+                <select
+                  value={verifyAuthority}
+                  onChange={(e) => setVerifyAuthority(e.target.value)}
+                  className="form-select"
+                >
+                  <option value="CENTRAL_GOVERNMENT">Central Government</option>
+                  <option value="STATE_GOVERNMENT">State Government</option>
+                  <option value="DISTRICT_COLLECTOR">District Collector</option>
+                  <option value="DISTRICT_REGISTRAR">District Registrar</option>
+                  <option value="APEX_BANK">Apex Cooperative Bank (NABARD/MSC)</option>
+                  <option value="DCCB">DCCB District Bank</option>
+                  <option value="PACS">PACS Primary Society</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Jurisdiction *</label>
+                <input
+                  type="text"
+                  required
+                  value={verifyJurisdiction}
+                  onChange={(e) => setVerifyJurisdiction(e.target.value)}
+                  className="form-input"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Verified Applicability Mandate *</label>
+              <input
+                type="text"
+                required
+                value={verifyApplicability}
+                onChange={(e) => setVerifyApplicability(e.target.value)}
+                className="form-input"
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+              <div className="form-group">
+                <label className="form-label">Effective Date *</label>
+                <input
+                  type="date"
+                  required
+                  value={verifyEffectiveDate}
+                  onChange={(e) => setVerifyEffectiveDate(e.target.value)}
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Expiry / Review Date</label>
+                <input
+                  type="date"
+                  value={verifyExpiryDate}
+                  onChange={(e) => setVerifyExpiryDate(e.target.value)}
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Precedence Tier (1-100) *</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  required
+                  value={verifyPrecedence}
+                  onChange={(e) => setVerifyPrecedence(Number(e.target.value))}
+                  className="form-input"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Administrative Verification Notes</label>
+              <textarea
+                value={verifyNotes}
+                onChange={(e) => setVerifyNotes(e.target.value)}
+                className="form-textarea"
+                placeholder="Certified compliant with Maharashtra Cooperative Societies Act..."
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <button type="button" onClick={() => setVerifyingDoc(null)} className="btn btn-secondary btn-sm" disabled={isVerifying}>
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary btn-sm" disabled={isVerifying} style={{ backgroundColor: 'var(--trust-700)' }}>
+                {isVerifying ? 'Certifying Verification...' : 'Confirm & Mark Verified'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Publication Confirmation Modal (ADMIN-only Phase 2B.3) */}
+      {publishingDoc && (
+        <Modal
+          isOpen={!!publishingDoc}
+          onClose={() => !isPublishing && setPublishingDoc(null)}
+          title={`Publish to Live RAG: ${publishingDoc.title}`}
+          subtitle="Generate 768-dim Gemini embeddings and activate in citizen knowledge index"
+          badge={<Badge variant="success">Admin Publication</Badge>}
+          maxWidth="640px"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div
+              style={{
+                padding: '0.85rem',
+                backgroundColor: 'var(--warning-50)',
+                border: '1px solid #fde68a',
+                borderRadius: '8px',
+                fontSize: '0.8rem',
+                color: 'var(--warning-900)',
+                lineHeight: 1.5,
+              }}
+            >
+              🚀 <strong>Staged Publication Protocol:</strong>
+              <ul style={{ margin: '0.5rem 0 0 1.25rem', padding: 0 }}>
+                <li>Extract text from persisted source attachment (<code>{publishingDoc.fileName || 'document.pdf'}</code>).</li>
+                <li>Deterministically chunk into coherent semantic sections.</li>
+                <li>Generate 768-dimensional embeddings using <code>gemini-embedding-001</code>.</li>
+                <li>Atomically activate in live retrieval (<code>is_current=True</code>, <code>status=published</code>).</li>
+                <li>Mark any older version of this document as superseded.</li>
+              </ul>
+            </div>
+
+            <div style={{ backgroundColor: 'var(--slate-50)', padding: '0.75rem 1rem', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '0.8rem' }}>
+              <div><strong>Issuing Authority:</strong> {publishingDoc.authorityLevel || 'State Government'}</div>
+              <div><strong>Jurisdiction:</strong> {publishingDoc.jurisdiction || 'Maharashtra'}</div>
+              <div><strong>Applicability:</strong> {publishingDoc.applicability || 'All Cooperatives'}</div>
+              <div><strong>Effective Date:</strong> {publishingDoc.effectiveDate}</div>
+              <div><strong>Verification Status:</strong> {publishingDoc.verificationStatus || 'VERIFIED_OFFICIAL'}</div>
+              <div><strong>Currentness Status:</strong> {publishingDoc.currentnessStatus || 'CURRENT'}</div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Publication Release Notes</label>
+              <textarea
+                value={publishNotes}
+                onChange={(e) => setPublishNotes(e.target.value)}
+                className="form-textarea"
+                placeholder="Publication approval notes for audit record..."
+              />
+            </div>
+
+            {isPublishing && (
+              <div
+                style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--primary-50)',
+                  border: '1px solid var(--primary-200)',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  fontSize: '0.85rem',
+                  color: 'var(--primary-800)',
+                  fontWeight: 600,
+                }}
+              >
+                <RefreshCw size={18} className="animate-spin" />
+                <span>Generating 768-dim Gemini embeddings & indexing live chunks. Please wait...</span>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <button
+                type="button"
+                onClick={() => setPublishingDoc(null)}
+                className="btn btn-secondary btn-sm"
+                disabled={isPublishing}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmPublish}
+                className="btn btn-primary btn-sm"
+                disabled={isPublishing}
+                style={{ backgroundColor: 'var(--success-700)' }}
+              >
+                {isPublishing ? 'Publishing & Indexing...' : 'Approve & Publish to Citizen RAG'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

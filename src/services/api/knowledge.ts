@@ -209,6 +209,111 @@ export async function submitDocumentForReview(
   };
 }
 
+export interface VerifyPayload {
+  verification_notes?: string;
+  authority_level?: string;
+  jurisdiction?: string;
+  applicability?: string[];
+  effective_date?: string;
+  expiry_review_date?: string;
+  precedence_tier?: number;
+}
+
+export async function verifyKnowledgeDocument(
+  docId: string,
+  payload?: VerifyPayload
+): Promise<{
+  success: boolean;
+  doc?: KnowledgeDoc;
+  error?: string;
+}> {
+  const res = await request<{
+    status: string;
+    message: string;
+    document: AdminDocBackendItem;
+  }>(`/api/admin/knowledge/documents/${docId}/verify`, {
+    method: 'POST',
+    body: JSON.stringify(payload || {}),
+  });
+
+  if (res.data && res.data.document) {
+    const doc = mapAdminDocToFrontend(res.data.document);
+    localDocsState = localDocsState.map((d) => (d.id === doc.id ? doc : d));
+    return { success: true, doc };
+  }
+
+  return {
+    success: false,
+    error: res.error || 'Failed to verify knowledge document.',
+  };
+}
+
+export async function publishKnowledgeDocument(
+  docId: string,
+  notes?: string
+): Promise<{
+  success: boolean;
+  doc?: KnowledgeDoc;
+  chunksCount?: number;
+  error?: string;
+}> {
+  const res = await request<{
+    status: string;
+    message: string;
+    published_chunks_count: number;
+    embedding_model: string;
+    vector_dimension: number;
+    document: AdminDocBackendItem;
+  }>(`/api/admin/knowledge/documents/${docId}/publish`, {
+    method: 'POST',
+    body: JSON.stringify({ notes }),
+  });
+
+  if (res.data && res.data.document) {
+    const doc = mapAdminDocToFrontend(res.data.document);
+    localDocsState = localDocsState.map((d) => (d.id === doc.id ? doc : d));
+    return {
+      success: true,
+      doc,
+      chunksCount: res.data.published_chunks_count,
+    };
+  }
+
+  return {
+    success: false,
+    error: res.error || 'Failed to publish document to live RAG.',
+  };
+}
+
+export async function rejectKnowledgeDocument(
+  docId: string,
+  reason?: string
+): Promise<{
+  success: boolean;
+  doc?: KnowledgeDoc;
+  error?: string;
+}> {
+  const res = await request<{
+    status: string;
+    message: string;
+    document: AdminDocBackendItem;
+  }>(`/api/admin/knowledge/documents/${docId}/reject`, {
+    method: 'POST',
+    body: JSON.stringify({ notes: reason }),
+  });
+
+  if (res.data && res.data.document) {
+    const doc = mapAdminDocToFrontend(res.data.document);
+    localDocsState = localDocsState.map((d) => (d.id === doc.id ? doc : d));
+    return { success: true, doc };
+  }
+
+  return {
+    success: false,
+    error: res.error || 'Failed to return document to draft.',
+  };
+}
+
 export async function getDocumentDetails(docId: string): Promise<KnowledgeDoc | null> {
   const res = await request<AdminDocBackendItem>(`/api/admin/knowledge/documents/${docId}`);
   if (res.data && res.data.id) {
