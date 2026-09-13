@@ -228,7 +228,7 @@ export const GrievancesPage: React.FC<GrievancesPageProps> = ({ role }) => {
       </div>
 
       {/* Case Overview Counters */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))', gap: '1rem' }}>
         <div
           onClick={() => setStatusFilter('all')}
           style={{
@@ -327,7 +327,7 @@ export const GrievancesPage: React.FC<GrievancesPageProps> = ({ role }) => {
 
       {/* Filter and Search Bar */}
       <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: '240px' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: 'min(100%, 220px)' }}>
           <Search
             size={16}
             style={{
@@ -584,8 +584,8 @@ export const GrievancesPage: React.FC<GrievancesPageProps> = ({ role }) => {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '1rem',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
+                gap: '0.85rem',
                 padding: '1rem',
                 backgroundColor: '#ffffff',
                 border: '1px solid var(--border-color)',

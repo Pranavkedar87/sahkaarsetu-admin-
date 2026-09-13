@@ -7,6 +7,7 @@ import { getNotifications } from './services/api/notifications';
 import { Sidebar } from './components/common/Sidebar';
 import { Navbar } from './components/common/Navbar';
 import { SearchModal } from './components/common/SearchModal';
+import { SplashScreen } from './components/common/SplashScreen';
 
 import { DashboardPage } from './pages/DashboardPage';
 import { KiosksPage } from './pages/KiosksPage';
@@ -18,9 +19,11 @@ import { AuditLogsPage } from './pages/AuditLogsPage';
 import { ProfilePage } from './pages/ProfilePage';
 
 export const App: React.FC = () => {
+  const [showSplash, setShowSplash] = useState(true);
   const [currentUser, setCurrentUser] = useState<User>(getStoredUser());
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -82,9 +85,23 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Handle Hamburger toggle intelligently for mobile vs desktop
+  const handleToggleNavigation = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setIsMobileNavOpen((prev) => !prev);
+    } else {
+      setSidebarOpen((prev) => !prev);
+    }
+  };
+
   return (
     <div className="app-container">
-      {/* Sidebar Navigation */}
+      {/* ── Startup Splash Screen (visually matching Citizen portal) ── */}
+      {showSplash && (
+        <SplashScreen onComplete={() => setShowSplash(false)} minDurationMs={1200} />
+      )}
+
+      {/* ── Sidebar Navigation (Responsive Desktop + Mobile Drawer) ── */}
       <Sidebar
         activeTab={activeTab}
         onSelectTab={(tab) => setActiveTab(tab)}
@@ -92,9 +109,11 @@ export const App: React.FC = () => {
         unreadNotificationsCount={unreadCount}
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
+        isMobileOpen={isMobileNavOpen}
+        onCloseMobile={() => setIsMobileNavOpen(false)}
       />
 
-      {/* Main Workspace Area */}
+      {/* ── Main Workspace Area ───────────────────────────────────── */}
       <div className="main-content">
         {/* Header Navbar */}
         <Navbar
@@ -103,7 +122,7 @@ export const App: React.FC = () => {
           unreadCount={unreadCount}
           onOpenSearch={() => setIsSearchOpen(true)}
           onNavigate={(tab) => setActiveTab(tab)}
-          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          onToggleSidebar={handleToggleNavigation}
         />
 
         {/* Page Content Body */}
@@ -155,7 +174,7 @@ export const App: React.FC = () => {
         </main>
       </div>
 
-      {/* Global Search Modal */}
+      {/* ── Global Search Modal ────────────────────────────────────── */}
       <SearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
@@ -164,3 +183,5 @@ export const App: React.FC = () => {
     </div>
   );
 };
+
+export default App;

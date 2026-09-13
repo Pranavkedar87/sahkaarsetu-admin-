@@ -190,7 +190,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, onNav
                   <AlertCircle size={16} style={{ color: 'var(--accent-700)' }} />
                   <div>
                     <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{g.id}</span> — {g.category} ({g.citizenMaskedName})
-                    <div style={{ fontSize: '0.75rem', color: 'var(--slate-500)', maxWidth: '400px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--slate-500)', maxWidth: 'min(360px, 65vw)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {g.citizenQuery}
                     </div>
                   </div>

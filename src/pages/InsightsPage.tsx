@@ -2,16 +2,17 @@ import React, { useState, useEffect } from 'react';
 import {
   BarChart3,
   TrendingUp,
-  Globe2,
-  Monitor,
+  Users,
+  Globe,
   AlertTriangle,
   Lightbulb,
   ArrowRight,
   BookOpen,
-  CheckCircle,
-  HelpCircle,
+  Calendar,
+  Layers,
   Sparkles,
   Info,
+  CheckCircle,
 } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
@@ -27,14 +28,16 @@ interface InsightsPageProps {
 export const InsightsPage: React.FC<InsightsPageProps> = ({ onNavigate }) => {
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState<OperationsAnalytics | null>(null);
-  const [period, setPeriod] = useState<'24h' | '7d' | '30d'>('30d');
+  const [period, setPeriod] = useState<'24h' | '7d' | '30d'>('7d');
 
   useEffect(() => {
     async function loadAnalytics() {
       setLoading(true);
       try {
-        const res = await getOperationsAnalytics(period);
-        setAnalytics(res);
+        const data = await getOperationsAnalytics(period);
+        setAnalytics(data);
+      } catch (err) {
+        console.error('Failed to load operations analytics:', err);
       } finally {
         setLoading(false);
       }
@@ -43,31 +46,31 @@ export const InsightsPage: React.FC<InsightsPageProps> = ({ onNavigate }) => {
   }, [period]);
 
   if (loading || !analytics) {
-    return <LoadingState message="Aggregating operational analytics and knowledge gap metrics..." />;
+    return <LoadingState message="Aggregating empirical telemetry from Supabase messages and grievance state..." />;
   }
 
-  const { timeline, categories, languages, knowledgeGaps, summary } = analytics;
+  const { summary, timeline, categories, languages, knowledgeGaps } = analytics;
   const maxQueries = Math.max(...timeline.map((t) => t.queries), 1);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%', boxSizing: 'border-box' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.85rem' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--slate-900)' }}>
-              Operational Insights & Knowledge Gaps
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+            <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--slate-900)' }}>
+              Operational Analytics & Insights
             </h2>
             <Badge variant="live" icon={<span className="pulse-dot" />}>
-              Live Database Telemetry
+              Supabase Live
             </Badge>
           </div>
-          <p style={{ fontSize: '0.875rem', color: 'var(--slate-500)', marginTop: '0.2rem' }}>
+          <p style={{ fontSize: '0.85rem', color: 'var(--slate-500)', marginTop: '0.2rem' }}>
             Empirical demand patterns, multilingual adoption, and closed-loop knowledge gap identification from Supabase PostgreSQL.
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
           {/* Period Selector */}
           <div style={{ display: 'flex', backgroundColor: 'var(--slate-100)', borderRadius: '6px', padding: '2px', border: '1px solid var(--border-color)' }}>
             {(['24h', '7d', '30d'] as const).map((p) => (
@@ -81,7 +84,7 @@ export const InsightsPage: React.FC<InsightsPageProps> = ({ onNavigate }) => {
                   borderRadius: '4px',
                   border: 'none',
                   backgroundColor: period === p ? '#ffffff' : 'transparent',
-                  color: period === p ? 'var(--primary-700)' : 'var(--slate-600)',
+                  color: period === p ? 'var(--sahkaar-teal)' : 'var(--slate-600)',
                   boxShadow: period === p ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
                   cursor: 'pointer',
                 }}
@@ -98,13 +101,13 @@ export const InsightsPage: React.FC<InsightsPageProps> = ({ onNavigate }) => {
       </div>
 
       {/* KPI Overview Strip */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))', gap: '0.85rem' }}>
         {/* Metric 1: Total Queries */}
         <div style={{ padding: '1rem', background: '#ffffff', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)' }}>
           <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--slate-500)', textTransform: 'uppercase' }}>
             Total Citizen Queries
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--slate-900)', marginTop: '0.25rem' }}>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--slate-900)', marginTop: '0.25rem' }}>
             {summary.totalQueries.toLocaleString()}
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--slate-500)', fontWeight: 600 }}>
@@ -149,7 +152,7 @@ export const InsightsPage: React.FC<InsightsPageProps> = ({ onNavigate }) => {
           <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--slate-500)', textTransform: 'uppercase' }}>
             Active Triage Cases
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--accent-700)', marginTop: '0.25rem' }}>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--accent-700)', marginTop: '0.25rem' }}>
             {summary.unresolvedEscalations}
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--accent-700)', fontWeight: 600 }}>
@@ -162,7 +165,7 @@ export const InsightsPage: React.FC<InsightsPageProps> = ({ onNavigate }) => {
           <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--slate-500)', textTransform: 'uppercase' }}>
             Knowledge Gaps
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#b45309', marginTop: '0.25rem' }}>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#b45309', marginTop: '0.25rem' }}>
             {summary.knowledgeGapsIdentified}
           </div>
           <div style={{ fontSize: '0.75rem', color: '#b45309', fontWeight: 600 }}>Targeted for ingestion</div>
@@ -170,7 +173,7 @@ export const InsightsPage: React.FC<InsightsPageProps> = ({ onNavigate }) => {
       </div>
 
       {/* 4 Core Charts */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '1.25rem' }}>
+      <div className="responsive-grid-mid">
         {/* Chart 1: Assistance Queries Over Time */}
         <Card
           title="Assistance Demand Over Time"
@@ -193,7 +196,7 @@ export const InsightsPage: React.FC<InsightsPageProps> = ({ onNavigate }) => {
                       <div
                         style={{
                           width: `${barWidth}%`,
-                          backgroundColor: 'var(--primary-600)',
+                          backgroundColor: 'var(--sahkaar-teal)',
                           height: '100%',
                           transition: 'width 0.3s ease',
                         }}
@@ -306,8 +309,8 @@ export const InsightsPage: React.FC<InsightsPageProps> = ({ onNavigate }) => {
                   border: '1px solid var(--border-color)',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.35rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--slate-900)' }}>
                       {gap.topic}
                     </span>
@@ -325,22 +328,24 @@ export const InsightsPage: React.FC<InsightsPageProps> = ({ onNavigate }) => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '0.5rem',
                     marginTop: '0.5rem',
-                    padding: '0.4rem 0.6rem',
+                    padding: '0.5rem 0.65rem',
                     backgroundColor: '#ffffff',
                     borderRadius: '6px',
                     border: '1px dashed #cbd5e1',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--slate-700)' }}>
-                    <Lightbulb size={14} style={{ color: 'var(--warning-700)' }} />
-                    <span><strong>Recommended Action:</strong> {gap.recommendedAction}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--slate-700)', minWidth: 0, flex: 1 }}>
+                    <Lightbulb size={14} style={{ color: 'var(--warning-700)', flexShrink: 0 }} />
+                    <span style={{ wordBreak: 'break-word' }}><strong>Recommended:</strong> {gap.recommendedAction}</span>
                   </div>
 
                   <button
                     onClick={() => onNavigate('knowledge')}
                     className="btn btn-secondary btn-sm"
-                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem', whiteSpace: 'nowrap' }}
+                    style={{ padding: '0.25rem 0.6rem', fontSize: '0.725rem', whiteSpace: 'nowrap' }}
                   >
                     Upload Document <ArrowRight size={10} />
                   </button>
@@ -353,3 +358,5 @@ export const InsightsPage: React.FC<InsightsPageProps> = ({ onNavigate }) => {
     </div>
   );
 };
+
+export default InsightsPage;

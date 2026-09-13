@@ -147,7 +147,7 @@ export const KiosksPage: React.FC<KiosksPageProps> = ({ role }) => {
       </div>
 
       {/* Fleet Overview Counters */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))', gap: '1rem' }}>
         <div
           onClick={() => setFilterStatus('all')}
           style={{
@@ -227,7 +227,7 @@ export const KiosksPage: React.FC<KiosksPageProps> = ({ role }) => {
 
       {/* Filter and Search Bar */}
       <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: '240px' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: 'min(100%, 220px)' }}>
           <Search
             size={16}
             style={{
@@ -248,7 +248,7 @@ export const KiosksPage: React.FC<KiosksPageProps> = ({ role }) => {
           />
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '0.8rem', color: 'var(--slate-500)', fontWeight: 600 }}>Filter:</span>
           {(['all', 'online', 'maintenance', 'offline'] as const).map((st) => (
             <button
@@ -505,7 +505,7 @@ export const KiosksPage: React.FC<KiosksPageProps> = ({ role }) => {
               </div>
 
               {/* Hardware Spec List */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: '0.85rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.65rem', fontSize: '0.825rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid var(--border-color)' }}>
                   <span style={{ color: 'var(--slate-500)' }}>Local IP Address:</span>
                   <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{selectedKiosk.ipAddress}</span>

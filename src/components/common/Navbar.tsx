@@ -1,6 +1,7 @@
 import React from 'react';
-import { Search, Bell, Menu, ShieldCheck, UserCheck, Activity, Wifi, WifiOff } from 'lucide-react';
+import { Search, Bell, Menu, ShieldCheck, WifiOff } from 'lucide-react';
 import { User, Role, AdminTab, SystemHealthData } from '../../types';
+import { SahkaarSetuLogo } from './SahkaarSetuLogo';
 
 interface NavbarProps {
   user: User;
@@ -21,81 +22,61 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleSidebar,
 }) => {
   return (
-    <header
-      style={{
-        backgroundColor: '#ffffff',
-        borderBottom: '1px solid var(--border-color)',
-        padding: '0.75rem 1.5rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        position: 'sticky',
-        top: 0,
-        zIndex: 30,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-      }}
-    >
-      {/* Left side: Hamburger & Search trigger */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+    <header className="sahkaar-navbar">
+      {/* ── Left Side: Hamburger & Mobile/Desktop Brand & Search ───────── */}
+      <div className="navbar-left">
+        {/* Hamburger Toggle */}
         <button
           onClick={onToggleSidebar}
-          className="btn btn-secondary btn-sm"
-          style={{ padding: '0.4rem', border: '1px solid var(--border-color)' }}
+          className="navbar-toggle-btn"
+          aria-label="Toggle Navigation Menu"
           title="Toggle Navigation"
         >
-          <Menu size={18} />
+          <Menu size={19} color="#0F6B68" />
         </button>
 
+        {/* Mobile Brand */}
+        <div
+          className="navbar-mobile-brand"
+          onClick={() => onNavigate('dashboard')}
+          role="button"
+          tabIndex={0}
+          title="SahkaarSetu Operations Dashboard"
+        >
+          <SahkaarSetuLogo size={28} />
+          <div className="navbar-brand-text">
+            <span className="navbar-brand-name">SahkaarSetu</span>
+            <span className="navbar-brand-tag">Admin</span>
+          </div>
+        </div>
+
+        {/* Desktop Quick Search Trigger */}
         <button
           onClick={onOpenSearch}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.65rem',
-            backgroundColor: 'var(--slate-50)',
-            border: '1px solid var(--border-color)',
-            borderRadius: 'var(--radius-md)',
-            padding: '0.45rem 0.9rem',
-            fontSize: '0.85rem',
-            color: 'var(--slate-500)',
-            cursor: 'pointer',
-            minWidth: '260px',
-            textAlign: 'left',
-          }}
+          className="navbar-desktop-search"
+          title="Quick search (⌘K or Ctrl+K)"
         >
           <Search size={16} />
           <span>Quick search (Kiosks, Docs, PACS)...</span>
-          <span
-            style={{
-              marginLeft: 'auto',
-              backgroundColor: 'var(--slate-200)',
-              fontSize: '0.7rem',
-              padding: '0.1rem 0.35rem',
-              borderRadius: '4px',
-              fontFamily: 'var(--font-mono)',
-            }}
-          >
-            ⌘K
-          </span>
+          <kbd className="navbar-search-kbd">⌘K</kbd>
         </button>
       </div>
 
-      {/* Right side: Backend Health indicator, Role switcher, Notifications, Profile */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        {/* Backend Connectivity Status */}
+      {/* ── Right Side: Controls (Search icon, Health, Role, Bell, Profile) ── */}
+      <div className="navbar-right">
+        {/* Mobile-Only Search Icon Trigger */}
+        <button
+          onClick={onOpenSearch}
+          className="navbar-icon-btn mobile-search-btn"
+          aria-label="Open Search"
+          title="Search"
+        >
+          <Search size={18} color="#334155" />
+        </button>
+
+        {/* Backend Connectivity Status (Desktop only) */}
         <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.45rem',
-            padding: '0.3rem 0.65rem',
-            borderRadius: '9999px',
-            backgroundColor: systemHealth.isBackendConnected ? 'var(--primary-50)' : 'var(--warning-50)',
-            border: `1px solid ${systemHealth.isBackendConnected ? '#bbf7d0' : '#fde68a'}`,
-            fontSize: '0.75rem',
-            fontWeight: 600,
-            color: systemHealth.isBackendConnected ? 'var(--primary-800)' : 'var(--warning-700)',
-          }}
+          className="navbar-health-pill desktop-only-pill"
           title={
             systemHealth.isBackendConnected
               ? `FastAPI Backend Online (${systemHealth.service} - ${systemHealth.model})`
@@ -110,25 +91,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           ) : (
             <>
               <WifiOff size={13} style={{ color: 'var(--warning-600)' }} />
-              <span>Local Demo Mode</span>
+              <span>Local Demo</span>
             </>
           )}
         </div>
 
-        {/* Administrator Badge */}
+        {/* Administrator Badge (Desktop only) */}
         <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            backgroundColor: 'var(--trust-50)',
-            border: '1px solid var(--trust-200)',
-            borderRadius: '9999px',
-            padding: '0.3rem 0.75rem',
-            fontSize: '0.75rem',
-            fontWeight: 700,
-            color: 'var(--trust-800)',
-          }}
+          className="navbar-admin-badge desktop-only-pill"
           title="SahkaarSetu Operations Console — Administrator Mode"
         >
           <ShieldCheck size={14} style={{ color: 'var(--trust-600)' }} />
@@ -138,76 +108,34 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Notifications Icon Button */}
         <button
           onClick={() => onNavigate('notifications')}
-          style={{
-            position: 'relative',
-            backgroundColor: 'transparent',
-            border: 'none',
-            padding: '0.45rem',
-            borderRadius: 'var(--radius-md)',
-            cursor: 'pointer',
-            color: 'var(--slate-600)',
-            display: 'flex',
-            alignItems: 'center',
-          }}
+          className="navbar-icon-btn"
+          aria-label="Attention Center Notifications"
           title="Attention Center"
         >
-          <Bell size={18} />
+          <Bell size={19} color="#1e293b" />
           {unreadCount > 0 && (
-            <span
-              style={{
-                position: 'absolute',
-                top: 2,
-                right: 2,
-                width: 16,
-                height: 16,
-                borderRadius: '50%',
-                backgroundColor: 'var(--danger-600)',
-                color: '#ffffff',
-                fontSize: '0.65rem',
-                fontWeight: 800,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {unreadCount}
+            <span className="navbar-bell-badge">
+              {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
         </button>
 
-        {/* User Avatar & Name */}
+        {/* User Profile Avatar / Name */}
         <div
           onClick={() => onNavigate('profile')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.65rem',
-            cursor: 'pointer',
-            paddingLeft: '0.5rem',
-            borderLeft: '1px solid var(--border-color)',
-          }}
+          className="navbar-profile-trigger"
+          title={`Signed in as ${user.name} (${user.role})`}
+          role="button"
+          tabIndex={0}
         >
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              backgroundColor: user.role === 'ADMIN' ? 'var(--trust-700)' : 'var(--primary-700)',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '0.8rem',
-              fontWeight: 700,
-            }}
-          >
-            {user.avatar || 'OP'}
+          <div className="navbar-avatar">
+            {user.avatar || 'AD'}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--slate-800)', lineHeight: 1.2 }}>
+          <div className="navbar-user-meta desktop-only-meta">
+            <span className="navbar-user-name">
               {user.name.split(' ')[0]}
             </span>
-            <span style={{ fontSize: '0.7rem', color: 'var(--slate-500)' }}>
+            <span className="navbar-user-role">
               {user.role}
             </span>
           </div>
@@ -216,3 +144,5 @@ export const Navbar: React.FC<NavbarProps> = ({
     </header>
   );
 };
+
+export default Navbar;

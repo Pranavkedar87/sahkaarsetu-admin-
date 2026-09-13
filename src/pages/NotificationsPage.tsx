@@ -166,7 +166,8 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                   display: 'flex',
                   alignItems: 'flex-start',
                   justifyContent: 'space-between',
-                  gap: '1rem',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem',
                   padding: '1.1rem 1.25rem',
                   backgroundColor: isUnread ? '#ffffff' : 'var(--slate-50)',
                   borderRadius: 'var(--radius-lg)',
@@ -201,7 +202,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', width: '100%', justifyContent: 'flex-end' }}>
                   {isUnread && (
                     <button
                       onClick={() => handleMarkAsRead(item.id)}

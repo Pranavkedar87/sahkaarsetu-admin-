@@ -120,7 +120,7 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = () => {
   };
 
   return (
-    <div className="page-container" style={{ padding: '1.5rem', maxWidth: '1400px', margin: '0 auto' }}>
+    <div className="page-container" style={{ padding: '0', maxWidth: '1400px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
       {/* Top Header */}
       <div
         style={{
@@ -277,8 +277,8 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = () => {
         </div>
 
         {/* Search Entity ID */}
-        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <div style={{ position: 'relative' }}>
+        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', flex: 1, minWidth: 'min(100%, 260px)' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: '180px' }}>
             <input
               type="text"
               placeholder="Search Entity ID (e.g. GRV-2026-001)..."
@@ -289,7 +289,8 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = () => {
                 borderRadius: '6px',
                 border: '1px solid #cbd5e1',
                 fontSize: '0.8125rem',
-                width: '260px',
+                width: '100%',
+                boxSizing: 'border-box',
               }}
             />
             <Search size={14} style={{ position: 'absolute', left: '0.625rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
@@ -529,7 +530,8 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = () => {
               borderRadius: '10px',
               maxWidth: '640px',
               width: '100%',
-              padding: '1.5rem',
+              padding: '1.25rem',
+              boxSizing: 'border-box',
               boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
               maxHeight: '85vh',
               overflowY: 'auto',
@@ -548,7 +550,7 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = () => {
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem', fontSize: '0.8125rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.65rem', marginBottom: '1rem', fontSize: '0.8125rem' }}>
               <div style={{ backgroundColor: '#f8fafc', padding: '0.5rem 0.75rem', borderRadius: '6px' }}>
                 <span style={{ color: '#64748b', display: 'block', fontSize: '0.6875rem' }}>Event ID</span>
                 <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{selectedLog.id}</span>

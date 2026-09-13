@@ -88,27 +88,27 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, role, 
   const resolvedGrievances = grievances.filter((g) => g.status === 'Resolved').length;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%', boxSizing: 'border-box' }}>
       {/* Closed Loop Architecture Banner */}
       <DifferentiatorBanner />
 
       {/* Page Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.85rem' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--slate-900)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+            <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--slate-900)' }}>
               Operations Overview
             </h2>
             <Badge variant="live" icon={<span className="pulse-dot" />}>
               Live Monitoring
             </Badge>
           </div>
-          <p style={{ fontSize: '0.875rem', color: 'var(--slate-500)', marginTop: '0.2rem' }}>
+          <p style={{ fontSize: '0.85rem', color: 'var(--slate-500)', marginTop: '0.2rem' }}>
             Multi-taluka kiosk telemetry, verified knowledge lifecycle, and cooperative grievance resolution.
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           <button onClick={() => onNavigate('knowledge')} className="btn btn-outline-primary btn-sm">
             <BookOpen size={14} /> Knowledge Desk
           </button>
@@ -119,13 +119,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, role, 
       </div>
 
       {/* 4 Core Pillars Grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-          gap: '1.25rem',
-        }}
-      >
+      <div className="responsive-grid-pillars">
         {/* Card 1: Kiosks Health */}
         <Card
           title="Kiosks Fleet Health"
@@ -136,24 +130,24 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, role, 
             </button>
           }
         >
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--slate-900)', margin: '0.25rem 0' }}>
-            {onlineKiosks} <span style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--slate-500)' }}>online of {totalKiosks}</span>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--slate-900)', margin: '0.25rem 0' }}>
+            {onlineKiosks} <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--slate-500)' }}>online of {totalKiosks}</span>
           </div>
           <p style={{ fontSize: '0.8rem', color: 'var(--slate-600)', marginBottom: '1rem' }}>
             Deployed across Primary Agricultural Credit Societies (PACS).
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', textAlign: 'center' }}>
-            <div style={{ padding: '0.5rem', background: 'var(--success-50)', borderRadius: '6px', border: '1px solid #dcfce7' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem', textAlign: 'center' }}>
+            <div style={{ padding: '0.5rem 0.25rem', background: 'var(--success-50)', borderRadius: '6px', border: '1px solid #dcfce7' }}>
               <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--success-700)' }}>{onlineKiosks}</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--success-700)', fontWeight: 600 }}>ONLINE</div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--success-700)', fontWeight: 600 }}>ONLINE</div>
             </div>
-            <div style={{ padding: '0.5rem', background: 'var(--warning-50)', borderRadius: '6px', border: '1px solid #fef3c7' }}>
+            <div style={{ padding: '0.5rem 0.25rem', background: 'var(--warning-50)', borderRadius: '6px', border: '1px solid #fef3c7' }}>
               <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--warning-700)' }}>{maintenanceKiosks}</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--warning-700)', fontWeight: 600 }}>MAINTENANCE</div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--warning-700)', fontWeight: 600 }}>MAINTENANCE</div>
             </div>
-            <div style={{ padding: '0.5rem', background: 'var(--danger-50)', borderRadius: '6px', border: '1px solid #fee2e2' }}>
+            <div style={{ padding: '0.5rem 0.25rem', background: 'var(--danger-50)', borderRadius: '6px', border: '1px solid #fee2e2' }}>
               <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--danger-700)' }}>{offlineKiosks}</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--danger-700)', fontWeight: 600 }}>OFFLINE</div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--danger-700)', fontWeight: 600 }}>OFFLINE</div>
             </div>
           </div>
         </Card>
@@ -168,24 +162,24 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, role, 
             </button>
           }
         >
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--slate-900)', margin: '0.25rem 0' }}>
-            {publishedDocs} <span style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--slate-500)' }}>verified of {totalDocs}</span>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--slate-900)', margin: '0.25rem 0' }}>
+            {publishedDocs} <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--slate-500)' }}>verified of {totalDocs}</span>
           </div>
           <p style={{ fontSize: '0.8rem', color: 'var(--slate-600)', marginBottom: '1rem' }}>
             Official by-laws, schemes & circulars grounding the AI.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', textAlign: 'center' }}>
-            <div style={{ padding: '0.5rem', background: 'var(--trust-50)', borderRadius: '6px', border: '1px solid #dbeafe' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem', textAlign: 'center' }}>
+            <div style={{ padding: '0.5rem 0.25rem', background: 'var(--trust-50)', borderRadius: '6px', border: '1px solid #dbeafe' }}>
               <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--trust-700)' }}>{publishedDocs}</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--trust-700)', fontWeight: 600 }}>VERIFIED</div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--trust-700)', fontWeight: 600 }}>VERIFIED</div>
             </div>
-            <div style={{ padding: '0.5rem', background: 'var(--warning-50)', borderRadius: '6px', border: '1px solid #fef3c7' }}>
+            <div style={{ padding: '0.5rem 0.25rem', background: 'var(--warning-50)', borderRadius: '6px', border: '1px solid #fef3c7' }}>
               <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--warning-700)' }}>{reviewDueDocs}</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--warning-700)', fontWeight: 600 }}>NEEDS REVIEW</div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--warning-700)', fontWeight: 600 }}>NEEDS REVIEW</div>
             </div>
-            <div style={{ padding: '0.5rem', background: 'var(--slate-100)', borderRadius: '6px', border: '1px solid var(--slate-200)' }}>
+            <div style={{ padding: '0.5rem 0.25rem', background: 'var(--slate-100)', borderRadius: '6px', border: '1px solid var(--slate-200)' }}>
               <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--slate-600)' }}>{outdatedDocs}</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--slate-600)', fontWeight: 600 }}>OUTDATED</div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--slate-600)', fontWeight: 600 }}>OUTDATED</div>
             </div>
           </div>
         </Card>
@@ -200,24 +194,24 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, role, 
             </button>
           }
         >
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--slate-900)', margin: '0.25rem 0' }}>
-            {inProgressGrievances} <span style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--slate-500)' }}>active cases</span>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--slate-900)', margin: '0.25rem 0' }}>
+            {inProgressGrievances} <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--slate-500)' }}>active cases</span>
           </div>
           <p style={{ fontSize: '0.8rem', color: 'var(--slate-600)', marginBottom: '1rem' }}>
             Citizen disputes and PACS service complaints.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', textAlign: 'center' }}>
-            <div style={{ padding: '0.5rem', background: 'var(--danger-50)', borderRadius: '6px', border: '1px solid #fee2e2' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem', textAlign: 'center' }}>
+            <div style={{ padding: '0.5rem 0.25rem', background: 'var(--danger-50)', borderRadius: '6px', border: '1px solid #fee2e2' }}>
               <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--danger-700)' }}>{newGrievances}</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--danger-700)', fontWeight: 600 }}>UNASSIGNED</div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--danger-700)', fontWeight: 600 }}>UNASSIGNED</div>
             </div>
-            <div style={{ padding: '0.5rem', background: 'var(--trust-50)', borderRadius: '6px', border: '1px solid #dbeafe' }}>
+            <div style={{ padding: '0.5rem 0.25rem', background: 'var(--trust-50)', borderRadius: '6px', border: '1px solid #dbeafe' }}>
               <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--trust-700)' }}>{inProgressGrievances}</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--trust-700)', fontWeight: 600 }}>IN PROGRESS</div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--trust-700)', fontWeight: 600 }}>IN PROGRESS</div>
             </div>
-            <div style={{ padding: '0.5rem', background: 'var(--success-50)', borderRadius: '6px', border: '1px solid #dcfce7' }}>
+            <div style={{ padding: '0.5rem 0.25rem', background: 'var(--success-50)', borderRadius: '6px', border: '1px solid #dcfce7' }}>
               <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--success-700)' }}>{resolvedGrievances}</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--success-700)', fontWeight: 600 }}>RESOLVED</div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--success-700)', fontWeight: 600 }}>RESOLVED</div>
             </div>
           </div>
         </Card>
@@ -232,32 +226,32 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, role, 
             </button>
           }
         >
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--slate-900)', margin: '0.25rem 0' }}>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--slate-900)', margin: '0.25rem 0' }}>
             {analytics?.summary ? analytics.summary.todayQueries.toLocaleString() : '0'}{' '}
-            <span style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--slate-500)' }}>queries today</span>
+            <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--slate-500)' }}>queries today</span>
           </div>
           <p style={{ fontSize: '0.8rem', color: 'var(--slate-600)', marginBottom: '1rem' }}>
             Multilingual citizen inquiries in Marathi, Hindi & English.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', textAlign: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.4rem', textAlign: 'center' }}>
             <div style={{ padding: '0.5rem', background: 'var(--primary-50)', borderRadius: '6px', border: '1px solid #dcfce7' }}>
               <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--primary-700)' }}>
                 {analytics?.summary ? analytics.summary.thisMonthQueries.toLocaleString() : '0'}
               </div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--primary-700)', fontWeight: 600 }}>30-DAY VOLUME</div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--primary-700)', fontWeight: 600 }}>30-DAY VOLUME</div>
             </div>
             <div style={{ padding: '0.5rem', background: 'var(--accent-50)', borderRadius: '6px', border: '1px solid #fed7aa' }}>
               <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--accent-700)' }}>
                 {analytics?.summary ? analytics.summary.unresolvedEscalations : '0'}
               </div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--accent-700)', fontWeight: 600 }}>ACTIVE CASES</div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--accent-700)', fontWeight: 600 }}>ACTIVE CASES</div>
             </div>
           </div>
         </Card>
       </div>
 
       {/* Mid-Row: Attention Items & Real-Time Telemetry */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.25rem' }}>
+      <div className="responsive-grid-mid">
         {/* Attention Items Feed */}
         <Card
           title="Immediate Operational Attention Required"
@@ -301,26 +295,26 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, role, 
                     }}
                   >
                     {item.category === 'kiosks' ? (
-                      <Monitor size={18} style={{ color: iconColor, marginTop: '0.15rem' }} />
+                      <Monitor size={18} style={{ color: iconColor, marginTop: '0.15rem', flexShrink: 0 }} />
                     ) : item.category === 'knowledge' ? (
-                      <BookOpen size={18} style={{ color: iconColor, marginTop: '0.15rem' }} />
+                      <BookOpen size={18} style={{ color: iconColor, marginTop: '0.15rem', flexShrink: 0 }} />
                     ) : (
-                      <AlertTriangle size={18} style={{ color: iconColor, marginTop: '0.15rem' }} />
+                      <AlertTriangle size={18} style={{ color: iconColor, marginTop: '0.15rem', flexShrink: 0 }} />
                     )}
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.25rem' }}>
                         <span style={{ fontWeight: 700, fontSize: '0.85rem', color: iconColor }}>
                           {item.title}
                         </span>
                         <span style={{ fontSize: '0.7rem', color: 'var(--slate-500)' }}>{item.timestamp}</span>
                       </div>
-                      <p style={{ fontSize: '0.775rem', color: 'var(--slate-700)', marginTop: '0.2rem' }}>
+                      <p style={{ fontSize: '0.775rem', color: 'var(--slate-700)', marginTop: '0.2rem', wordBreak: 'break-word' }}>
                         {item.message}
                       </p>
                       <button
                         onClick={() => onNavigate(item.linkTab)}
                         className="btn btn-secondary btn-sm"
-                        style={{ marginTop: '0.5rem', padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
+                        style={{ marginTop: '0.5rem', padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}
                       >
                         Take Action
                       </button>
@@ -343,31 +337,31 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, role, 
           }
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.85rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem', padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>
               <span style={{ color: 'var(--slate-500)' }}>Service URL:</span>
-              <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)', fontSize: '0.8rem' }}>
+              <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)', fontSize: '0.8rem', wordBreak: 'break-all' }}>
                 {import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}
               </span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem', padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>
               <span style={{ color: 'var(--slate-500)' }}>AI Generation Provider:</span>
               <span style={{ fontWeight: 600, color: 'var(--trust-700)' }}>
                 {systemHealth.aiProvider} ({systemHealth.model})
               </span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem', padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>
               <span style={{ color: 'var(--slate-500)' }}>Vector Embedding Model:</span>
               <span style={{ fontWeight: 600 }}>
                 {systemHealth.embeddingModel} (768 dimensions)
               </span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem', padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>
               <span style={{ color: 'var(--slate-500)' }}>Database & Vector Store:</span>
               <span style={{ fontWeight: 600 }}>
                 Supabase PostgreSQL + pgvector
               </span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem', padding: '0.5rem 0' }}>
               <span style={{ color: 'var(--slate-500)' }}>Last Health Check:</span>
               <span style={{ fontWeight: 600, color: 'var(--slate-700)' }}>
                 {systemHealth.checkedAt}
@@ -393,3 +387,5 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, role, 
     </div>
   );
 };
+
+export default DashboardPage;

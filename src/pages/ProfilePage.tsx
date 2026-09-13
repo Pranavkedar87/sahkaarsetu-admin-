@@ -32,7 +32,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user }) => {
           </Badge>
         }
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '1.25rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
           <div
             style={{
               width: 56,

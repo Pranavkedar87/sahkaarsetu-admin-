@@ -456,7 +456,7 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
       </div>
 
       {/* Knowledge Health Counters */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))', gap: '1rem' }}>
         <div
           onClick={() => setStatusFilter('all')}
           style={{
@@ -536,7 +536,7 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
 
       {/* Filter and Search Bar */}
       <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: '260px' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: 'min(100%, 220px)' }}>
           <Search
             size={16}
             style={{
@@ -575,7 +575,7 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
         </select>
 
         {/* Status Pills */}
-        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
           {(['all', 'Published', 'Review Due', 'Under Review', 'Outdated'] as const).map((st) => (
             <button
               key={st}
@@ -1665,7 +1665,7 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
                         )}
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--slate-600)' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--slate-600)' }}>
                         <div><strong style={{ color: 'var(--slate-500)' }}>Effective Date:</strong> {ver.effective_date || 'N/A'}</div>
                         <div><strong style={{ color: 'var(--slate-500)' }}>Verification:</strong> {ver.verification_status || 'NEEDS_VERIFICATION'}</div>
                         <div><strong style={{ color: 'var(--slate-500)' }}>Currency:</strong> {ver.currentness_status || 'NEEDS_VERIFICATION'}</div>
