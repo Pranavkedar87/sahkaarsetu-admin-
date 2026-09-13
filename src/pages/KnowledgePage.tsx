@@ -38,8 +38,12 @@ import {
   publishKnowledgeDocument,
   rejectKnowledgeDocument,
   getDocumentDetails,
+  getDocumentVersions,
+  reindexKnowledgeDocument,
   ChunkSearchItem,
   VerifyPayload,
+  DocumentVersionHistoryBackendResponse,
+  ReindexBackendResponse,
 } from '../services/api/knowledge';
 import { API_BASE_URL } from '../services/api/client';
 
@@ -103,6 +107,20 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
   const [newApplicability, setNewApplicability] = useState('All Primary Agricultural Credit Societies');
   const [newNotes, setNewNotes] = useState('');
   const [uploadStep, setUploadStep] = useState<1 | 2 | 3>(1);
+
+  // Phase 2B.4 Version Management & Safe Re-indexing State
+  const [versionModalOpen, setVersionModalOpen] = useState<boolean>(false);
+  const [versionHistoryDoc, setVersionHistoryDoc] = useState<KnowledgeDoc | null>(null);
+  const [versionHistory, setVersionHistory] = useState<DocumentVersionHistoryBackendResponse | null>(null);
+  const [loadingVersions, setLoadingVersions] = useState<boolean>(false);
+
+  const [reindexModalOpen, setReindexModalOpen] = useState<boolean>(false);
+  const [reindexingDoc, setReindexingDoc] = useState<KnowledgeDoc | null>(null);
+  const [isReindexing, setIsReindexing] = useState<boolean>(false);
+  const [reindexStage, setReindexStage] = useState<string>('idle');
+  const [reindexResult, setReindexResult] = useState<ReindexBackendResponse | null>(null);
+  const [reindexNotes, setReindexNotes] = useState<string>('');
+
 
   const fetchDocs = async () => {
     setLoading(true);
@@ -257,6 +275,75 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
     } finally {
       setSubmittingReviewId(null);
       setTimeout(() => setToastMessage(null), 5000);
+    }
+  };
+
+  const handleOpenVersionHistory = async (doc: KnowledgeDoc) => {
+    setVersionHistoryDoc(doc);
+    setVersionHistory(null);
+    setVersionModalOpen(true);
+    setLoadingVersions(true);
+    try {
+      const res = await getDocumentVersions(doc.id);
+      if (res.success && res.history) {
+        setVersionHistory(res.history);
+      } else {
+        setToastMessage(res.error || 'Failed to fetch document version lineage.');
+      }
+    } catch (err: any) {
+      setToastMessage(err?.message || 'Error fetching version history.');
+    } finally {
+      setLoadingVersions(false);
+    }
+  };
+
+  const handleOpenReindex = (doc: KnowledgeDoc) => {
+    setReindexingDoc(doc);
+    setReindexNotes('Administrative maintenance re-indexing.');
+    setReindexStage('idle');
+    setReindexResult(null);
+    setReindexModalOpen(true);
+  };
+
+  const handleConfirmReindex = async () => {
+    if (!reindexingDoc) return;
+    setIsReindexing(true);
+    setReindexStage('Preparing');
+
+    const stageTimer1 = setTimeout(() => setReindexStage('Extracting'), 300);
+    const stageTimer2 = setTimeout(() => setReindexStage('Generating embeddings'), 700);
+    const stageTimer3 = setTimeout(() => setReindexStage('Validating'), 1200);
+    const stageTimer4 = setTimeout(() => setReindexStage('Activating'), 1600);
+
+    try {
+      const res = await reindexKnowledgeDocument(reindexingDoc.id, reindexNotes);
+      clearTimeout(stageTimer1);
+      clearTimeout(stageTimer2);
+      clearTimeout(stageTimer3);
+      clearTimeout(stageTimer4);
+
+      if (res.success && res.result) {
+        setReindexStage('Completed');
+        setReindexResult(res.result);
+        setToastMessage(`Document re-indexed! ${res.result.chunks_created} fresh chunks active (768-dim, gemini-embedding-001).`);
+        await fetchDocs();
+        if (versionHistoryDoc && versionHistoryDoc.id === reindexingDoc.id) {
+          handleOpenVersionHistory(versionHistoryDoc);
+        }
+      } else {
+        setToastMessage(res.error || 'Re-indexing failed. Existing chunks remain untouched.');
+        setReindexStage('idle');
+      }
+    } catch (err: any) {
+      clearTimeout(stageTimer1);
+      clearTimeout(stageTimer2);
+      clearTimeout(stageTimer3);
+      clearTimeout(stageTimer4);
+      setToastMessage(err?.message || 'Error executing safe re-indexing.');
+      setReindexStage('idle');
+    } finally {
+      setIsReindexing(false);
+      setTimeout(() => setToastMessage(null), 8000);
     }
   };
 
@@ -633,6 +720,35 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
                             </span>
                           )
                         )}
+                        {((doc.status === 'Published' || doc.status?.toLowerCase() === 'published') && doc.is_current) && (
+                          role === 'ADMIN' ? (
+                            <button
+                              onClick={() => handleOpenReindex(doc)}
+                              className="btn btn-outline-primary btn-sm"
+                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                              title="Safely re-generate embeddings and refresh vector index (ADMIN only)"
+                            >
+                              <RefreshCw size={12} /> Re-index
+                            </button>
+                          ) : (
+                            <button
+                              disabled
+                              className="btn btn-secondary btn-sm"
+                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', opacity: 0.5, cursor: 'not-allowed' }}
+                              title="Re-indexing is restricted to Administrators"
+                            >
+                              <RefreshCw size={12} /> Re-index (Admin)
+                            </button>
+                          )
+                        )}
+                        <button
+                          onClick={() => handleOpenVersionHistory(doc)}
+                          className="btn btn-secondary btn-sm"
+                          style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                          title="View document lineage and version history"
+                        >
+                          <History size={12} /> Versions
+                        </button>
                         <button
                           onClick={() => handleOpenDoc(doc)}
                           className="btn btn-secondary btn-sm"
@@ -730,6 +846,39 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
                     </span>
                   )
                 )}
+                {((selectedDoc.status === 'Published' || selectedDoc.status?.toLowerCase() === 'published') && selectedDoc.is_current) && (
+                  role === 'ADMIN' ? (
+                    <button
+                      onClick={() => {
+                        setIsDetailOpen(false);
+                        handleOpenReindex(selectedDoc);
+                      }}
+                      className="btn btn-outline-primary btn-sm"
+                      title="Safely re-generate embeddings and refresh vector index"
+                    >
+                      <RefreshCw size={14} /> Safe Re-index
+                    </button>
+                  ) : (
+                    <button
+                      disabled
+                      className="btn btn-secondary btn-sm"
+                      style={{ opacity: 0.5, cursor: 'not-allowed' }}
+                      title="Re-indexing restricted to Administrators"
+                    >
+                      <RefreshCw size={14} /> Safe Re-index (Admin)
+                    </button>
+                  )
+                )}
+                <button
+                  onClick={() => {
+                    setIsDetailOpen(false);
+                    handleOpenVersionHistory(selectedDoc);
+                  }}
+                  className="btn btn-secondary btn-sm"
+                  title="Inspect full version history and lineage"
+                >
+                  <History size={14} /> Full Version Lineage
+                </button>
                 <button onClick={() => setIsDetailOpen(false)} className="btn btn-secondary btn-sm">
                   Close
                 </button>
@@ -1407,6 +1556,256 @@ export const KnowledgePage: React.FC<KnowledgePageProps> = ({ role }) => {
               >
                 {isPublishing ? 'Publishing & Indexing...' : 'Approve & Publish to Citizen RAG'}
               </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Version History & Lineage Modal (Phase 2B.4) */}
+      {versionModalOpen && versionHistoryDoc && (
+        <Modal
+          isOpen={versionModalOpen}
+          onClose={() => setVersionModalOpen(false)}
+          title={`Version Lineage: ${versionHistoryDoc.title}`}
+          subtitle="Lineage tracking for official document versions"
+          badge={<Badge variant="info">Phase 2B.4 Governance</Badge>}
+          maxWidth="840px"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                backgroundColor: 'var(--slate-50)',
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
+                border: '1px solid var(--border-color)',
+                flexWrap: 'wrap',
+                gap: '0.5rem',
+              }}
+            >
+              <div>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--slate-500)' }}>CURRENT IN-FORCE VERSION: </span>
+                <span style={{ fontWeight: 800, color: 'var(--success-700)', fontFamily: 'var(--font-mono)' }}>
+                  {versionHistory?.current_version || 'None active'}
+                </span>
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--slate-600)' }}>
+                Total Recorded Versions: <strong>{versionHistory?.total_versions || 1}</strong>
+              </div>
+            </div>
+
+            {loadingVersions ? (
+              <LoadingState message="Loading document version lineage from backend..." />
+            ) : versionHistory && versionHistory.versions.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {versionHistory.versions.map((ver) => {
+                  const isCurrentInForce = ver.is_current && ver.status === 'published';
+                  const isSuperseded = ver.status === 'superseded' || ver.currentness_status === 'SUPERSEDED';
+
+                  return (
+                    <div
+                      key={ver.id}
+                      style={{
+                        padding: '1rem',
+                        borderRadius: '8px',
+                        backgroundColor: isCurrentInForce ? 'var(--success-50)' : '#ffffff',
+                        border: `1.5px solid ${isCurrentInForce ? '#86efac' : 'var(--border-color)'}`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.5rem',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontWeight: 800, fontFamily: 'var(--font-mono)', fontSize: '1rem', color: 'var(--slate-900)' }}>
+                            {ver.version}
+                          </span>
+                          {isCurrentInForce ? (
+                            <Badge variant="success">CURRENT (In Force)</Badge>
+                          ) : isSuperseded ? (
+                            <span className="badge" style={{ backgroundColor: 'var(--slate-100)', color: 'var(--slate-600)', fontSize: '0.7rem' }}>
+                              SUPERSEDED
+                            </span>
+                          ) : (
+                            <Badge variant={ver.status === 'published' ? 'success' : ver.status === 'under_review' ? 'warning' : 'neutral'}>
+                              {ver.status.toUpperCase()}
+                            </Badge>
+                          )}
+                          <span
+                            className="badge"
+                            style={{
+                              backgroundColor: (ver.chunks_count || 0) > 0 ? 'var(--trust-100)' : 'var(--slate-100)',
+                              color: (ver.chunks_count || 0) > 0 ? 'var(--trust-800)' : 'var(--slate-500)',
+                              fontSize: '0.7rem',
+                            }}
+                          >
+                            {ver.chunks_count || 0} Vector Chunks (768-dim)
+                          </span>
+                        </div>
+
+                        {isCurrentInForce && (
+                          role === 'ADMIN' ? (
+                            <button
+                              onClick={() => {
+                                const foundDoc = docs.find((d) => d.id === ver.id) || versionHistoryDoc;
+                                handleOpenReindex(foundDoc);
+                              }}
+                              className="btn btn-outline-primary btn-sm"
+                              style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}
+                            >
+                              <RefreshCw size={12} /> Safe Re-index
+                            </button>
+                          ) : (
+                            <span style={{ fontSize: '0.7rem', color: 'var(--slate-400)', fontStyle: 'italic' }}>
+                              Re-index restricted to Admin
+                            </span>
+                          )
+                        )}
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--slate-600)' }}>
+                        <div><strong style={{ color: 'var(--slate-500)' }}>Effective Date:</strong> {ver.effective_date || 'N/A'}</div>
+                        <div><strong style={{ color: 'var(--slate-500)' }}>Verification:</strong> {ver.verification_status || 'NEEDS_VERIFICATION'}</div>
+                        <div><strong style={{ color: 'var(--slate-500)' }}>Currency:</strong> {ver.currentness_status || 'NEEDS_VERIFICATION'}</div>
+                        <div><strong style={{ color: 'var(--slate-500)' }}>Created:</strong> {ver.created_at ? ver.created_at.split('T')[0] : 'N/A'}</div>
+                        <div><strong style={{ color: 'var(--slate-500)' }}>Published:</strong> {ver.published_at ? ver.published_at.split('T')[0] : 'Unpublished'}</div>
+                        {ver.published_by && <div><strong style={{ color: 'var(--slate-500)' }}>Published By:</strong> {ver.published_by}</div>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p style={{ fontSize: '0.85rem', color: 'var(--slate-500)' }}>
+                No version lineage found for this document.
+              </p>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+              <button onClick={() => setVersionModalOpen(false)} className="btn btn-secondary btn-sm">
+                Close
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Safe Re-Indexing Confirmation Modal (Phase 2B.4 ADMIN-only) */}
+      {reindexModalOpen && reindexingDoc && (
+        <Modal
+          isOpen={reindexModalOpen}
+          onClose={() => !isReindexing && setReindexModalOpen(false)}
+          title={`Safe Re-Indexing: ${reindexingDoc.title}`}
+          subtitle="Atomic re-generation of 768-dim Gemini embeddings with zero downtime"
+          badge={<Badge variant="info">Safe Re-index Protocol</Badge>}
+          maxWidth="640px"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div
+              style={{
+                padding: '0.85rem',
+                backgroundColor: 'var(--trust-50)',
+                border: '1px solid #bfdbfe',
+                borderRadius: '8px',
+                fontSize: '0.8rem',
+                color: 'var(--trust-900)',
+                lineHeight: 1.5,
+              }}
+            >
+              🛡️ <strong>Safety Invariant Guarantee:</strong>
+              <ul style={{ margin: '0.5rem 0 0 1.25rem', padding: 0 }}>
+                <li>Document must be currently <strong>Published</strong> and <strong>Current</strong>.</li>
+                <li>New embeddings are generated and validated at <strong>768 dimensions</strong> before live chunks are touched.</li>
+                <li>If any error occurs (extraction, API outage, dimension mismatch), old chunks remain <strong>100% untouched</strong>.</li>
+                <li>Zero citizen RAG disruption or partial state exposure.</li>
+              </ul>
+            </div>
+
+            {isReindexing && (
+              <div
+                style={{
+                  backgroundColor: 'var(--slate-50)',
+                  padding: '1rem',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-color)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.75rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, color: 'var(--primary-800)', fontSize: '0.85rem' }}>
+                  <RefreshCw size={16} className="animate-spin" />
+                  <span>Re-indexing in progress: <strong>{reindexStage}...</strong></span>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--slate-500)', fontWeight: 600 }}>
+                  {['Preparing', 'Extracting', 'Generating embeddings', 'Validating', 'Activating'].map((st) => {
+                    const isActive = reindexStage === st;
+                    return (
+                      <span key={st} style={{ color: isActive ? 'var(--primary-700)' : 'var(--slate-400)', fontWeight: isActive ? 800 : 500 }}>
+                        {st}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {reindexResult && (
+              <div
+                style={{
+                  backgroundColor: 'var(--success-50)',
+                  padding: '0.85rem 1rem',
+                  borderRadius: '8px',
+                  border: '1px solid #86efac',
+                  fontSize: '0.8rem',
+                  color: 'var(--success-900)',
+                }}
+              >
+                <div style={{ fontWeight: 800, marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <CheckCircle2 size={16} color="#15803d" />
+                  <span>Re-indexing Successfully Completed</span>
+                </div>
+                <div>Fresh Chunks Created: <strong>{reindexResult.chunks_created}</strong></div>
+                <div>Embedding Model: <strong>{reindexResult.embedding_model}</strong> (dimension {reindexResult.embedding_dimension})</div>
+                <div>Re-indexed Timestamp: <strong>{reindexResult.reindexed_at}</strong></div>
+              </div>
+            )}
+
+            {!reindexResult && (
+              <div className="form-group">
+                <label className="form-label">Audit / Maintenance Notes (Optional)</label>
+                <textarea
+                  value={reindexNotes}
+                  onChange={(e) => setReindexNotes(e.target.value)}
+                  className="form-textarea"
+                  placeholder="Reason for re-indexing (e.g. routine index refresh, updated chunking granularity)..."
+                  disabled={isReindexing}
+                />
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <button
+                type="button"
+                onClick={() => setReindexModalOpen(false)}
+                className="btn btn-secondary btn-sm"
+                disabled={isReindexing}
+              >
+                {reindexResult ? 'Close' : 'Cancel'}
+              </button>
+              {!reindexResult && (
+                <button
+                  type="button"
+                  onClick={handleConfirmReindex}
+                  className="btn btn-primary btn-sm"
+                  disabled={isReindexing}
+                >
+                  {isReindexing ? 'Executing Safe Re-index...' : 'Confirm & Execute Re-index'}
+                </button>
+              )}
             </div>
           </div>
         </Modal>

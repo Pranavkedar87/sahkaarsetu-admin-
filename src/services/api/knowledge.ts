@@ -322,6 +322,83 @@ export async function getDocumentDetails(docId: string): Promise<KnowledgeDoc | 
   return null;
 }
 
+export interface DocumentVersionBackendItem {
+  id: string;
+  document_id: string;
+  version: string;
+  status: string;
+  is_current: boolean;
+  effective_date?: string;
+  verification_status?: string;
+  currentness_status?: string;
+  published_at?: string;
+  reviewed_at?: string;
+  superseded_by?: string;
+  created_at?: string;
+  updated_at?: string;
+  created_by?: string;
+  published_by?: string;
+  chunks_count?: number;
+}
+
+export interface DocumentVersionHistoryBackendResponse {
+  status: string;
+  document_id: string;
+  lineage_title: string;
+  current_version?: string;
+  total_versions: number;
+  versions: DocumentVersionBackendItem[];
+}
+
+export interface ReindexBackendResponse {
+  status: string;
+  message: string;
+  document_id: string;
+  version: string;
+  document_status: string;
+  is_current: boolean;
+  chunks_created: number;
+  embedding_model: string;
+  embedding_dimension: number;
+  reindexed_at: string;
+}
+
+export async function getDocumentVersions(docId: string): Promise<{
+  success: boolean;
+  history?: DocumentVersionHistoryBackendResponse;
+  error?: string;
+}> {
+  const res = await request<DocumentVersionHistoryBackendResponse>(`/api/admin/knowledge/documents/${docId}/versions`);
+  if (res.data && Array.isArray(res.data.versions)) {
+    return { success: true, history: res.data };
+  }
+  return {
+    success: false,
+    error: res.error || 'Failed to fetch document version history.',
+  };
+}
+
+export async function reindexKnowledgeDocument(
+  docId: string,
+  notes?: string
+): Promise<{
+  success: boolean;
+  result?: ReindexBackendResponse;
+  error?: string;
+}> {
+  const res = await request<ReindexBackendResponse>(`/api/admin/knowledge/documents/${docId}/reindex`, {
+    method: 'POST',
+    body: JSON.stringify({ notes }),
+  });
+  if (res.data && res.data.document_id) {
+    return { success: true, result: res.data };
+  }
+  return {
+    success: false,
+    error: res.error || 'Failed to re-index knowledge document.',
+  };
+}
+
 export async function searchKnowledgeChunks(
   query: string,
   language: string = 'en',
@@ -356,3 +433,4 @@ export async function searchKnowledgeChunks(
     isRealBackend: false,
   };
 }
+
