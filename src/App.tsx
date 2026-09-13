@@ -14,6 +14,7 @@ import { KnowledgePage } from './pages/KnowledgePage';
 import { GrievancesPage } from './pages/GrievancesPage';
 import { InsightsPage } from './pages/InsightsPage';
 import { NotificationsPage } from './pages/NotificationsPage';
+import { AuditLogsPage } from './pages/AuditLogsPage';
 import { ProfilePage } from './pages/ProfilePage';
 
 export const App: React.FC = () => {
@@ -140,6 +141,10 @@ export const App: React.FC = () => {
               role="ADMIN"
               onRefreshBadge={refreshNotifications}
             />
+          )}
+
+          {activeTab === 'audit-logs' && (
+            <AuditLogsPage role="ADMIN" />
           )}
 
           {activeTab === 'profile' && (

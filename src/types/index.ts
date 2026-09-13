@@ -16,6 +16,7 @@ export type AdminTab =
   | 'grievances'
   | 'insights'
   | 'notifications'
+  | 'audit-logs'
   | 'profile';
 
 export type KioskStatus = 'online' | 'offline' | 'maintenance';
@@ -170,3 +171,24 @@ export interface SystemHealthData {
   isBackendConnected: boolean;
   checkedAt: string;
 }
+
+export interface AuditLogItem {
+  id: string;
+  userId?: string | null;
+  userName: string;
+  userRole: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  details?: Record<string, any> | null;
+  createdAt: string;
+}
+
+export interface AuditLogResponse {
+  status: string;
+  items: AuditLogItem[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+

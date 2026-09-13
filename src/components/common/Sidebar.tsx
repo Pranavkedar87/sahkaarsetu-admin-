@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldAlert,
+  ShieldCheck,
 } from 'lucide-react';
 import { AdminTab, Role } from '../../types';
 
@@ -37,6 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'knowledge', label: 'Knowledge Base', icon: <BookOpen size={18} /> },
     { id: 'grievances', label: 'Grievances', icon: <AlertCircle size={18} /> },
     { id: 'insights', label: 'Insights & Analytics', icon: <BarChart3 size={18} /> },
+    { id: 'audit-logs', label: 'Audit Logs', icon: <ShieldCheck size={18} /> },
   ];
 
   const bottomItems: { id: AdminTab; label: string; icon: React.ReactNode; badge?: number }[] = [
