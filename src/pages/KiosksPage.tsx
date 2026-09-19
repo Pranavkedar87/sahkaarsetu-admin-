@@ -23,6 +23,8 @@ import { Modal } from '../components/common/Modal';
 import { LoadingState, EmptyState } from '../components/common/FeedbackStates';
 import { KioskItem, KioskStatus, Role } from '../types';
 import { getKiosksList, updateKioskStatus } from '../services/api/kiosks';
+import { KioskFormModal } from './KioskFormModal';
+import { ExternalLink, Camera } from 'lucide-react';
 
 interface KiosksPageProps {
   role: Role;
@@ -38,6 +40,7 @@ export const KiosksPage: React.FC<KiosksPageProps> = ({ role }) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [activeModalTab, setActiveModalTab] = useState<'details' | 'telemetry' | 'usage'>('details');
   const [notificationMsg, setNotificationMsg] = useState<string | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   const fetchKiosks = async () => {
     setLoading(true);
@@ -506,6 +509,46 @@ export const KiosksPage: React.FC<KiosksPageProps> = ({ role }) => {
 
               {/* Hardware Spec List */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.65rem', fontSize: '0.825rem' }}>
+                {selectedKiosk.installationPhotoPath && (
+                  <div style={{ gridColumn: '1 / -1', marginBottom: '0.5rem', border: '1px solid var(--border-color)', borderRadius: '6px', overflow: 'hidden' }}>
+                    <div style={{ padding: '0.4rem', background: 'var(--slate-50)', fontWeight: 600, borderBottom: '1px solid var(--border-color)' }}>Installation Photo</div>
+                    <img src={selectedKiosk.installationPhotoPath} alt="Kiosk" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover' }} />
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid var(--border-color)' }}>
+                  <span style={{ color: 'var(--slate-500)' }}>Actions:</span>
+                  <span>
+                    <button onClick={() => { setIsFormOpen(true); }} style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', background: 'var(--slate-100)', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer' }}>Edit Kiosk</button>
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid var(--border-color)' }}>
+                  <span style={{ color: 'var(--slate-500)' }}>Installation Location:</span>
+                  <span style={{ fontWeight: 600 }}>{selectedKiosk.location}</span>
+                </div>
+                {selectedKiosk.latitude && selectedKiosk.longitude && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid var(--border-color)' }}>
+                    <span style={{ color: 'var(--slate-500)' }}>GPS Coordinates:</span>
+                    <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      {selectedKiosk.latitude}, {selectedKiosk.longitude}
+                      <a href={`https://www.google.com/maps?q=${selectedKiosk.latitude},${selectedKiosk.longitude}`} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: 'var(--primary-600)', textDecoration: 'none' }}>
+                        <ExternalLink size={12} /> Map
+                      </a>
+                    </span>
+                  </div>
+                )}
+                {selectedKiosk.lastKnownLatitude && selectedKiosk.lastKnownLongitude && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid var(--border-color)' }}>
+                    <span style={{ color: 'var(--slate-500)' }}>Last Known Location:</span>
+                    <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      {selectedKiosk.lastKnownLatitude}, {selectedKiosk.lastKnownLongitude}
+                      <a href={`https://www.google.com/maps?q=${selectedKiosk.lastKnownLatitude},${selectedKiosk.lastKnownLongitude}`} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: 'var(--primary-600)', textDecoration: 'none' }}>
+                        <ExternalLink size={12} /> Map
+                      </a>
+                      <br/>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--slate-400)' }}>Updated: {selectedKiosk.lastLocationUpdate}</span>
+                    </span>
+                  </div>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid var(--border-color)' }}>
                   <span style={{ color: 'var(--slate-500)' }}>Local IP Address:</span>
                   <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{selectedKiosk.ipAddress}</span>

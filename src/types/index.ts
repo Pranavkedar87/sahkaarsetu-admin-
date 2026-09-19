@@ -45,6 +45,14 @@ export interface KioskItem {
   totalQueries: number;
   health: KioskHealth;
   notes?: string;
+  latitude?: number;
+  longitude?: number;
+  locationAccuracy?: number;
+  locationSource?: string;
+  installationPhotoPath?: string;
+  lastKnownLatitude?: number;
+  lastKnownLongitude?: number;
+  lastLocationUpdate?: string;
 }
 
 export type DocumentType =

@@ -39,6 +39,14 @@ export function mapBackendKioskToItem(item: any): KioskItem {
     totalQueries: 1250,
     health: healthObj,
     notes: item.notes || '',
+    latitude: item.latitude,
+    longitude: item.longitude,
+    locationAccuracy: item.location_accuracy,
+    locationSource: item.location_source,
+    installationPhotoPath: item.installation_photo_path,
+    lastKnownLatitude: item.last_known_latitude,
+    lastKnownLongitude: item.last_known_longitude,
+    lastLocationUpdate: item.last_location_update,
   };
 }
 
@@ -130,4 +138,53 @@ export async function updateKioskStatus(
     success: false,
     message: res.error || 'Failed to update kiosk status',
   };
+}
+
+
+export async function createKiosk(payload: {
+  name: string;
+  pacs_name: string;
+  location: string;
+  district?: string;
+  state?: string;
+  latitude?: number;
+  longitude?: number;
+  location_accuracy?: number;
+  location_source?: string;
+  status?: string;
+}): Promise<{ success: boolean; message: string; data?: KioskItem }> {
+  const res = await request<any>('/api/admin/kiosks', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  if (res.isRealBackend && res.data) {
+    const mapped = mapBackendKioskToItem(res.data);
+    localKiosksState.unshift(mapped);
+    return { success: true, message: 'Kiosk created successfully', data: mapped };
+  }
+  return { success: false, message: res.error || 'Failed to create kiosk' };
+}
+
+export async function uploadKioskPhoto(kioskId: string, file: File): Promise<{ success: boolean; url?: string; message: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const token = localStorage.getItem('sih_admin_auth');
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  try {
+    const response = await fetch(`/api/admin/kiosks/${kioskId}/photo`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+    const data = await response.json();
+    if (response.ok) {
+      return { success: true, url: data.url, message: 'Photo uploaded' };
+    }
+    return { success: false, message: data.detail || 'Upload failed' };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
 }
